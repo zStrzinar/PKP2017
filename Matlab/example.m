@@ -19,7 +19,7 @@ function example()
 
 %% Set paths
 % path to the selected video in the MOD dataset
-path_to_modd = 'D:/Fakulteta za Elektrotehniko/PKP 2016/datasets/' ;
+path_to_modd = 'D:/Fakulteta za Elektrotehniko/PKP 2017/Koda/datasets/' ;
 path_modd_video = [path_to_modd,'data/01/gtvideo.avi'] ; 
 
 %% Add paths to learned models and draw tools
