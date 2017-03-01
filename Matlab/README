@@ -1,0 +1,43 @@
+Sea Edge Detector for Unmanned Surface Vessel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+v.1.0.0
+
+(C) 2014, Machine Vision Laboratory
+University of Ljubljana
+Faculty of Electrical Engineering
+
+
+Credits:
+~~~~~~~~
+-> Original Matlab code:
+     Matej Kristan <matej.kristan@fe.uni-lj.si>
+-> Matlab code cleanup & Coder-related tweaks:
+     Vildana Sulić Kenk <vildana.sulic@fe.uni-lj.si>
+     Rok Mandeljc <rok.mandeljc@fe.uni-lj.si>
+
+1. Introduction
+~~~~~~~~~~~~~~~
+This is Matlab-coder-friendly rewrite of the algorithm for sea edge detector
+and segmentation from [1,2]. To compile with the coder, replacement functions are needed.
+If you are interested in Matlab-coder-compatible port that translates to C++, please contact
+Rok Mandeljc, who implemented coder-compatible wrappers for some functions.
+
+[1] Fast image-based obstacle detection from unmanned surface vehicles
+Matej Kristan, Vildana Sulic, Stanislav Kovacic, and Janez Perš
+ViCoS technical report 201430 -- draft of a paper under review, 2014
+
+[2] A graphical model for rapid obstacle image-map estimation from unmanned surface vehicles
+Matej Kristan, Janez Perš, Vildana Sulic, and Stanislav Kovacic
+Asian Conference on Computer Vision, ACCV2014, 2014
+
+The work was done as a part of collaboration between Machine Vision
+Laboratory and Harphasea do.o.o on an Unmanned Surface Vessel (USV)
+project.
+
+
+2. Package contents
+~~~~~~~~~~~~~~~~~~~
+-> draw-tools : functions required for visualization
+-> learned-hiperpriors-on-MODD : learned hiperpriors on MOD dataset
+example.m : an example that loads a videosequence from MOD and runs the segmentation
+
