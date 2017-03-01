@@ -47,7 +47,7 @@ for f = 1:num_frames,
     I = frames(:,:,:,f);
     
     % Process frame
-    [ detector, sel_xy, objects, masked_sea] = detect_edge_of_sea_simplified(detector, I) ;
+    [ detector, sel_xy, objects, masked_sea] = detect_edge_of_sea_simplified(detector, I) ; % tole je taglavno
     
     % Display results
     displayEdgeAndObjects( I, sel_xy, objects, masked_sea, detector.current_mixture, display_type ) ;
