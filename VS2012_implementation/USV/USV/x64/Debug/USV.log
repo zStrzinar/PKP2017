@@ -1,116 +1,148 @@
-﻿Build started 28.5.2014 22:40:35.
-     1>Project "B:\Faks\3. letnik\Ladjica\VS2012_solutions\USV\USV\USV.vcxproj" on node 2 (Build target(s)).
-     1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\x86_amd64\CL.exe /c /IB:\openCV\build\x64\vc11\..\..\include /I"B:\Faks\3. letnik\Ladjica\mexopencv\include" /Zi /nologo /W3 /WX- /Od /D _WINDLL /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"x64\Debug\\" /Fd"x64\Debug\vc110.pdb" /Gd /TP /errorReport:prompt dualmrf_custom.cpp
-         dualmrf_custom.cpp
-     1>dualmrf_custom.cpp(122): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-     1>dualmrf_custom.cpp(124): warning C4244: 'initializing' : conversion from 'double' to 'int', possible loss of data
-     1>dualmrf_custom.cpp(135): warning C4244: 'initializing' : conversion from 'double' to 'int', possible loss of data
-     1>dualmrf_custom.cpp(279): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-     1>dualmrf_custom.cpp(316): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-     1>dualmrf_custom.cpp(393): warning C4244: 'argument' : conversion from 'double' to 'int', possible loss of data
-     1>dualmrf_custom.cpp(411): warning C4244: 'initializing' : conversion from 'double' to 'int', possible loss of data
-     1>dualmrf_custom.cpp(245): warning C4102: 'std' : unreferenced label
-     1>b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(781): warning C4344: behavior change: use of explicit template arguments results in call to 'T MxArray::at<T>(mwIndex) const'
-                 with
-                 [
-                     T=int
-                 ]
-                 but the regular function 'MxArray MxArray::at(const std::string &,mwIndex) const' is a better match
-                 if you expect 'MxArray MxArray::at(const std::string &,mwIndex) const' to be called then you need to make it an explicit specialization
-                 b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(428) : see reference to function template instantiation 'cv::Point_<_Tp> MxArray::toPoint_<int>(void) const' being compiled
-                 with
-                 [
-                     _Tp=int
-                 ]
-     1>b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(781): warning C4344: behavior change: use of explicit template arguments results in call to 'T MxArray::at<T>(mwIndex) const'
-                 with
-                 [
-                     T=float
-                 ]
-                 but the regular function 'MxArray MxArray::at(const std::string &,mwIndex) const' is a better match
-                 if you expect 'MxArray MxArray::at(const std::string &,mwIndex) const' to be called then you need to make it an explicit specialization
-                 b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(431) : see reference to function template instantiation 'cv::Point_<_Tp> MxArray::toPoint_<float>(void) const' being compiled
-                 with
-                 [
-                     _Tp=float
-                 ]
-     1>b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(789): warning C4344: behavior change: use of explicit template arguments results in call to 'T MxArray::at<T>(mwIndex) const'
-                 with
-                 [
-                     T=float
-                 ]
-                 but the regular function 'MxArray MxArray::at(const std::string &,mwIndex) const' is a better match
-                 if you expect 'MxArray MxArray::at(const std::string &,mwIndex) const' to be called then you need to make it an explicit specialization
-                 b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(434) : see reference to function template instantiation 'cv::Point3_<_Tp> MxArray::toPoint3_<float>(void) const' being compiled
-                 with
-                 [
-                     _Tp=float
-                 ]
-     1>b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(798): warning C4344: behavior change: use of explicit template arguments results in call to 'T MxArray::at<T>(mwIndex) const'
-                 with
-                 [
-                     T=int
-                 ]
-                 but the regular function 'MxArray MxArray::at(const std::string &,mwIndex) const' is a better match
-                 if you expect 'MxArray MxArray::at(const std::string &,mwIndex) const' to be called then you need to make it an explicit specialization
-                 b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(437) : see reference to function template instantiation 'cv::Size_<_Tp> MxArray::toSize_<int>(void) const' being compiled
-                 with
-                 [
-                     _Tp=int
-                 ]
-     1>b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(807): warning C4344: behavior change: use of explicit template arguments results in call to 'T MxArray::at<T>(mwIndex) const'
-                 with
-                 [
-                     T=int
-                 ]
-                 but the regular function 'MxArray MxArray::at(const std::string &,mwIndex) const' is a better match
-                 if you expect 'MxArray MxArray::at(const std::string &,mwIndex) const' to be called then you need to make it an explicit specialization
-                 b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(440) : see reference to function template instantiation 'cv::Rect_<_Tp> MxArray::toRect_<int>(void) const' being compiled
-                 with
-                 [
-                     _Tp=int
-                 ]
-     1>b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(813): warning C4267: 'initializing' : conversion from 'size_t' to 'int', possible loss of data
-                 b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(443) : see reference to function template instantiation 'cv::Scalar_<_Tp> MxArray::toScalar_<double>(void) const' being compiled
-                 with
-                 [
-                     _Tp=double
-                 ]
-     1>b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(819): warning C4344: behavior change: use of explicit template arguments results in call to 'T MxArray::at<T>(mwIndex) const'
-                 with
-                 [
-                     T=double
-                 ]
-                 but the regular function 'MxArray MxArray::at(const std::string &,mwIndex) const' is a better match
-                 if you expect 'MxArray MxArray::at(const std::string &,mwIndex) const' to be called then you need to make it an explicit specialization
-     1>b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(820): warning C4344: behavior change: use of explicit template arguments results in call to 'T MxArray::at<T>(mwIndex) const'
-                 with
-                 [
-                     T=double
-                 ]
-                 but the regular function 'MxArray MxArray::at(const std::string &,mwIndex) const' is a better match
-                 if you expect 'MxArray MxArray::at(const std::string &,mwIndex) const' to be called then you need to make it an explicit specialization
-     1>b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(821): warning C4344: behavior change: use of explicit template arguments results in call to 'T MxArray::at<T>(mwIndex) const'
-                 with
-                 [
-                     T=double
-                 ]
-                 but the regular function 'MxArray MxArray::at(const std::string &,mwIndex) const' is a better match
-                 if you expect 'MxArray MxArray::at(const std::string &,mwIndex) const' to be called then you need to make it an explicit specialization
-     1>b:\faks\3. letnik\ladjica\mexopencv\include\MxArray.hpp(822): warning C4344: behavior change: use of explicit template arguments results in call to 'T MxArray::at<T>(mwIndex) const'
-                 with
-                 [
-                     T=double
-                 ]
-                 but the regular function 'MxArray MxArray::at(const std::string &,mwIndex) const' is a better match
-                 if you expect 'MxArray MxArray::at(const std::string &,mwIndex) const' to be called then you need to make it an explicit specialization
-       Link:
-         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:"B:\Faks\3. letnik\Ladjica\VS2012_solutions\USV\x64\Debug\USV.mexw64" /INCREMENTAL /NOLOGO /LIBPATH:B:\openCV\build\x64\vc11\lib /LIBPATH:"B:\Faks\3. letnik\Ladjica\mexopencv\lib" /LIBPATH:"C:\Program Files\MATLAB\R2013a\extern\lib\win64\microsoft" opencv_core248d.lib opencv_imgproc248d.lib opencv_highgui248d.lib opencv_ml248d.lib opencv_video248d.lib opencv_features2d248d.lib opencv_calib3d248d.lib opencv_objdetect248d.lib opencv_contrib248d.lib opencv_legacy248d.lib opencv_flann248d.lib libmx.lib libmex.lib libmat.lib opencv_core248d.lib opencv_imgproc248d.lib opencv_highgui248d.lib opencv_ml248d.lib opencv_video248d.lib opencv_features2d248d.lib opencv_calib3d248d.lib opencv_objdetect248d.lib opencv_contrib248d.lib opencv_legacy248d.lib opencv_flann248d.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"B:\Faks\3. letnik\Ladjica\VS2012_solutions\USV\x64\Debug\USV.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"B:\Faks\3. letnik\Ladjica\VS2012_solutions\USV\x64\Debug\USV.lib" /MACHINE:X64 /export:mexFunction /DLL x64\Debug\dualmrf_custom.obj
-         MxArray.obj
-         USV.vcxproj -> B:\Faks\3. letnik\Ladjica\VS2012_solutions\USV\x64\Debug\USV.mexw64
-     1>Done Building Project "B:\Faks\3. letnik\Ladjica\VS2012_solutions\USV\USV\USV.vcxproj" (Build target(s)).
-
-Build succeeded.
-
-Time Elapsed 00:00:04.30
+﻿  MxArray.cpp
+c:\mexopencv\src\mxarray.cpp(172): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+c:\mexopencv\src\mxarray.cpp(352): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+c:\mexopencv\src\mxarray.cpp(381): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+c:\mexopencv\src\mxarray.cpp(399): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+c:\mexopencv\src\mxarray.cpp(409): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+c:\mexopencv\src\mxarray.cpp(439): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+c:\mexopencv\src\mxarray.cpp(449): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+c:\mexopencv\src\mxarray.cpp(546): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+c:\mexopencv\src\mxarray.cpp(599): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+c:\mexopencv\src\mxarray.cpp(617): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+c:\mexopencv\include\mxarray.hpp(813): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  c:\mexopencv\include\mxarray.hpp(443): note: see reference to function template instantiation 'cv::Scalar_<double> MxArray::toScalar_<double>(void) const' being compiled
+c:\program files (x86)\microsoft visual studio 14.0\vc\include\xutility(2372): warning C4996: 'std::copy::_Unchecked_iterators::_Deprecate': Call to 'std::copy' with parameters that may be unsafe - this call relies on the caller to check that the passed values are correct. To disable this warning, use -D_SCL_SECURE_NO_WARNINGS. See documentation on how to use Visual C++ 'Checked Iterators'
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\xutility(2372): note: see declaration of 'std::copy::_Unchecked_iterators::_Deprecate'
+  c:\mexopencv\src\mxarray.cpp(238): note: see reference to function template instantiation '_OutIt std::copy<std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<char>>>,mxChar*>(_InIt,_InIt,_OutIt)' being compiled
+          with
+          [
+              _OutIt=mxChar *,
+              _InIt=std::_Vector_const_iterator<std::_Vector_val<std::_Simple_types<char>>>
+          ]
+c:\mexopencv\include\mxarray.hpp(862): warning C4800: 'mxChar': forcing value to bool 'true' or 'false' (performance warning)
+  c:\mexopencv\src\mxarray.cpp(335): note: see reference to function template instantiation 'T MxArray::at<bool>(std::mwIndex) const' being compiled
+          with
+          [
+              T=bool
+          ]
+c:\mexopencv\include\mxarray.hpp(864): warning C4800: 'double': forcing value to bool 'true' or 'false' (performance warning)
+c:\mexopencv\include\mxarray.hpp(867): warning C4800: 'int8_t': forcing value to bool 'true' or 'false' (performance warning)
+c:\mexopencv\include\mxarray.hpp(870): warning C4800: 'uint8_t': forcing value to bool 'true' or 'false' (performance warning)
+c:\mexopencv\include\mxarray.hpp(873): warning C4800: 'int16_t': forcing value to bool 'true' or 'false' (performance warning)
+c:\mexopencv\include\mxarray.hpp(876): warning C4800: 'uint16_t': forcing value to bool 'true' or 'false' (performance warning)
+c:\mexopencv\include\mxarray.hpp(879): warning C4800: 'int32_t': forcing value to bool 'true' or 'false' (performance warning)
+c:\mexopencv\include\mxarray.hpp(882): warning C4800: 'uint32_t': forcing value to bool 'true' or 'false' (performance warning)
+c:\mexopencv\include\mxarray.hpp(885): warning C4800: 'int64_t': forcing value to bool 'true' or 'false' (performance warning)
+c:\mexopencv\include\mxarray.hpp(888): warning C4800: 'uint64_t': forcing value to bool 'true' or 'false' (performance warning)
+c:\mexopencv\include\mxarray.hpp(891): warning C4800: 'float': forcing value to bool 'true' or 'false' (performance warning)
+c:\program files (x86)\microsoft visual studio 14.0\vc\include\xmemory0(737): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\xmemory0(857): note: see reference to function template instantiation 'void std::allocator<_Ty>::construct<_Objty,const unsigned __int64&>(_Objty *,const unsigned __int64 &)' being compiled
+          with
+          [
+              _Ty=int,
+              _Objty=int
+          ]
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\xmemory0(857): note: see reference to function template instantiation 'void std::allocator<_Ty>::construct<_Objty,const unsigned __int64&>(_Objty *,const unsigned __int64 &)' being compiled
+          with
+          [
+              _Ty=int,
+              _Objty=int
+          ]
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\xmemory0(996): note: see reference to function template instantiation 'void std::allocator_traits<_Alloc>::construct<_Ty,const unsigned __int64&>(std::allocator<_Ty> &,_Objty *,const unsigned __int64 &)' being compiled
+          with
+          [
+              _Alloc=std::allocator<int>,
+              _Ty=int,
+              _Objty=int
+          ]
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\xmemory0(995): note: see reference to function template instantiation 'void std::allocator_traits<_Alloc>::construct<_Ty,const unsigned __int64&>(std::allocator<_Ty> &,_Objty *,const unsigned __int64 &)' being compiled
+          with
+          [
+              _Alloc=std::allocator<int>,
+              _Ty=int,
+              _Objty=int
+          ]
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\xmemory(225): note: see reference to function template instantiation 'void std::_Wrap_alloc<std::allocator<_Ty>>::construct<_Ty,const mwSize&>(_Ty *,const mwSize &)' being compiled
+          with
+          [
+              _Ty=int
+          ]
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\xmemory(225): note: see reference to function template instantiation 'void std::_Wrap_alloc<std::allocator<_Ty>>::construct<_Ty,const mwSize&>(_Ty *,const mwSize &)' being compiled
+          with
+          [
+              _Ty=int
+          ]
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\xmemory(251): note: see reference to function template instantiation '_FwdIt *std::_Uninitialized_copy_al_unchecked1<_InIt,_FwdIt,std::allocator<_Ty>>(_InIt,_InIt,_FwdIt,std::_Wrap_alloc<std::allocator<_Ty>> &,std::_General_ptr_iterator_tag,std::_Any_tag)' being compiled
+          with
+          [
+              _FwdIt=int *,
+              _InIt=const mwSize *,
+              _Ty=int
+          ]
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\xmemory(264): note: see reference to function template instantiation '_FwdIt *std::_Uninitialized_copy_al_unchecked<_Iter,int*,std::allocator<_Ty>>(_InIt,_InIt,_FwdIt,std::_Wrap_alloc<std::allocator<_Ty>> &)' being compiled
+          with
+          [
+              _FwdIt=int *,
+              _Iter=const mwSize *,
+              _Ty=int,
+              _InIt=const mwSize *
+          ]
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\vector(1653): note: see reference to function template instantiation '_FwdIt *std::_Uninitialized_copy<_Iter,int*,std::allocator<_Ty>>(_InIt,_InIt,_FwdIt,std::_Wrap_alloc<std::allocator<_Ty>> &)' being compiled
+          with
+          [
+              _FwdIt=int *,
+              _Iter=const mwSize *,
+              _Ty=int,
+              _InIt=const mwSize *
+          ]
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\vector(818): note: see reference to function template instantiation 'int *std::vector<int,std::allocator<_Ty>>::_Ucopy<_Iter>(_Iter,_Iter,int *)' being compiled
+          with
+          [
+              _Ty=int,
+              _Iter=const mwSize *
+          ]
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\vector(818): note: see reference to function template instantiation 'int *std::vector<int,std::allocator<_Ty>>::_Ucopy<_Iter>(_Iter,_Iter,int *)' being compiled
+          with
+          [
+              _Ty=int,
+              _Iter=const mwSize *
+          ]
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\vector(793): note: see reference to function template instantiation 'void std::vector<int,std::allocator<_Ty>>::_Construct<_Iter>(_Iter,_Iter,std::forward_iterator_tag)' being compiled
+          with
+          [
+              _Ty=int,
+              _Iter=const mwSize *
+          ]
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\vector(793): note: see reference to function template instantiation 'void std::vector<int,std::allocator<_Ty>>::_Construct<_Iter>(_Iter,_Iter,std::forward_iterator_tag)' being compiled
+          with
+          [
+              _Ty=int,
+              _Iter=const mwSize *
+          ]
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\vector(778): note: see reference to function template instantiation 'void std::vector<int,std::allocator<_Ty>>::_Construct<_Iter>(_Iter,_Iter)' being compiled
+          with
+          [
+              _Ty=int,
+              _Iter=const mwSize *
+          ]
+  c:\program files (x86)\microsoft visual studio 14.0\vc\include\vector(778): note: see reference to function template instantiation 'void std::vector<int,std::allocator<_Ty>>::_Construct<_Iter>(_Iter,_Iter)' being compiled
+          with
+          [
+              _Ty=int,
+              _Iter=const mwSize *
+          ]
+  c:\mexopencv\src\mxarray.cpp(351): note: see reference to function template instantiation 'std::vector<int,std::allocator<_Ty>>::vector<const mwSize*,void>(_Iter,_Iter)' being compiled
+          with
+          [
+              _Ty=int,
+              _Iter=const mwSize *
+          ]
+  c:\mexopencv\src\mxarray.cpp(351): note: see reference to function template instantiation 'std::vector<int,std::allocator<_Ty>>::vector<const mwSize*,void>(_Iter,_Iter)' being compiled
+          with
+          [
+              _Ty=int,
+              _Iter=const mwSize *
+          ]
+     Creating library D:\Fakulteta za Elektrotehniko\PKP 2017\Koda\VS2012_implementation\USV\x64\Debug\USV.lib and object D:\Fakulteta za Elektrotehniko\PKP 2017\Koda\VS2012_implementation\USV\x64\Debug\USV.exp
+  USV.vcxproj -> D:\Fakulteta za Elektrotehniko\PKP 2017\Koda\VS2012_implementation\USV\x64\Debug\USV.mexw64
+  USV.vcxproj -> D:\Fakulteta za Elektrotehniko\PKP 2017\Koda\VS2012_implementation\USV\x64\Debug\USV.pdb (Full PDB)
