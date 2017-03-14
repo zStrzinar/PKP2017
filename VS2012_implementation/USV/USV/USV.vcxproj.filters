@@ -24,10 +24,10 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <Object Include="MxArray.obj" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="dualmrf_custom.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\mexopencv\src\MxArray.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
