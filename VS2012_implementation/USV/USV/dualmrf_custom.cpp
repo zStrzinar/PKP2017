@@ -141,67 +141,67 @@ void  GetConvolutionKernel(std::string type_of_em, cv::Mat sizeMask, cv::Mat& H_
 cv::Mat normpdf(cv::Mat x, cv::Mat mu, cv::Mat prec, cv::Mat sigma, double epsilon)
 {
 	cv::Mat A;
-		cv::Mat repeatedX;
-		double prodEigenVals = 1.0;				
-		//generate eigenvalue matrix 5×5 populated with zeros
-		cv::Mat S = cv::Mat(5,5, CV_64F, double(0));
-		cv::Mat S_tmp = cv::Mat(5,5, CV_64F, double(0));
+	cv::Mat repeatedX;
+	double prodEigenVals = 1.0;				
+	//generate eigenvalue matrix 5×5 populated with zeros
+	cv::Mat S = cv::Mat(5,5, CV_64F, double(0));
+	cv::Mat S_tmp = cv::Mat(5,5, CV_64F, double(0));
 
-		if (prec.empty())
-		{		
-			cv::SVD svd(sigma);				
-			cv::Mat s(svd.w.rows, svd.w.cols, CV_64F);
-			cv::Mat s_tmp(svd.w.rows, svd.w.cols, CV_64F);
-			svd.w.copyTo(s);
-			for (int i = 0; i < svd.w.rows; i++)
+	if (prec.empty())
+	{		
+		cv::SVD svd(sigma);				
+		cv::Mat s(svd.w.rows, svd.w.cols, CV_64F);
+		cv::Mat s_tmp(svd.w.rows, svd.w.cols, CV_64F);
+		svd.w.copyTo(s);
+		for (int i = 0; i < svd.w.rows; i++)
+		{
+			if(svd.w.at<double>(i,0) < epsilon)
 			{
-				if(svd.w.at<double>(i,0) < epsilon)
-				{
-					svd.w.at<double>(i,0) = 1;
-				}			
-				//svd.w.at<double>(i,0) = 1/sqrt(svd.w.at<double>(i,0));				
-				prodEigenVals *= svd.w.at<double>(i,0);				
-			}
+				svd.w.at<double>(i,0) = 1;
+			}			
+			//svd.w.at<double>(i,0) = 1/sqrt(svd.w.at<double>(i,0));				
+			prodEigenVals *= svd.w.at<double>(i,0);				
+		}
 					
-			//set s as diagonal in it		
-			S = S.diag(s);		
-			cv::sqrt(s,s_tmp);
-			s_tmp = 1/s_tmp;
-			S_tmp = S_tmp.diag(s_tmp);
+		//set s as diagonal in it		
+		S = S.diag(s);		
+		cv::sqrt(s,s_tmp);
+		s_tmp = 1/s_tmp;
+		S_tmp = S_tmp.diag(s_tmp);
 
-			repeatedX = cv::repeat(mu, 1, x.cols);
-			cv::subtract(x, repeatedX, x); //(x-mu)		
-			A = (x).t()*(svd.u*S_tmp); //x'*(U*s));			
+		repeatedX = cv::repeat(mu, 1, x.cols);
+		cv::subtract(x, repeatedX, x); //(x-mu)		
+		A = (x).t()*(svd.u*S_tmp); //x'*(U*s));			
 
-			~S;			
-		}
-		else
-		{		 			
-			cv::SVD svd(prec);	
-			for (int i = 0; i < svd.w.rows; i++)
-			{
-				svd.w.at<double>(i,0) = sqrt(svd.w.at<double>(i,0));
-			}
-
-			repeatedX = cv::repeat(mu, 1, x.cols);
-			cv::subtract(x, repeatedX, x); //(x-mu)		
-			//generate eigenvalue matrix 5×5 populated with zeros
-			cv::Mat S = cv::Mat(5,5, CV_64F, double(0));			
-			//set s as diagonal in it
-			S = S.diag(svd.w);	
-			A = (x)*svd.u*S;	
-
-			~S;			
+		~S;			
+	}
+	else
+	{		 			
+		cv::SVD svd(prec);	
+		for (int i = 0; i < svd.w.rows; i++)
+		{
+			svd.w.at<double>(i,0) = sqrt(svd.w.at<double>(i,0));
 		}
 
-		//Calculate Gaussian: y = exp(-0.5*sum(A .* A, 2)) / (sqrt(2*pi) .* prod(diag(S))) ;
-		//-- A*A and perform sums by columns, to get 1 column vector
-		cv::reduce(A.mul(A), A, 1,CV_REDUCE_SUM);
-		cv::exp(-0.5*A,A);					
-		//divide A by a scalar 
-		double scl = (sqrt(2*CV_PI)*prodEigenVals);
-		A = A/scl;
-		return A;
+		repeatedX = cv::repeat(mu, 1, x.cols);
+		cv::subtract(x, repeatedX, x); //(x-mu)		
+		//generate eigenvalue matrix 5×5 populated with zeros
+		cv::Mat S = cv::Mat(5,5, CV_64F, double(0));			
+		//set s as diagonal in it
+		S = S.diag(svd.w);	
+		A = (x)*svd.u*S;	
+
+		~S;			
+	}
+
+	//Calculate Gaussian: y = exp(-0.5*sum(A .* A, 2)) / (sqrt(2*pi) .* prod(diag(S))) ;
+	//-- A*A and perform sums by columns, to get 1 column vector
+	cv::reduce(A.mul(A), A, 1,CV_REDUCE_SUM);
+	cv::exp(-0.5*A,A);					
+	//divide A by a scalar 
+	double scl = (sqrt(2*CV_PI)*prodEigenVals);
+	A = A/scl;
+	return A;
 }
 
 cv::Mat mergePd(cv::Mat mu_d, cv::Mat c_d, cv::Mat mu_0, cv::Mat c0,cv::Mat ic0)
