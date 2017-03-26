@@ -22,9 +22,6 @@ int main(int argc, char** argv) {
     cv::namedWindow("Original",CV_WINDOW_AUTOSIZE);
     cv::imshow("Original", input);
 
-    cv::namedWindow("Edges", CV_WINDOW_AUTOSIZE);
-    cv::imshow("Edges", edges);
-
     cv::waitKey(0);
     return 0;
 }
