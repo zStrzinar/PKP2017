@@ -1,11 +1,5 @@
-cmake_minimum_required(VERSION 3.6)
-project(PKP2017_SEGMENTATION)
-
+cmake_minimum_required(VERSION 2.8)
+project( PKP2017 )
 find_package( OpenCV REQUIRED )
-
-set(CMAKE_CXX_STANDARD 11)
-
-set(SOURCE_FILES main.cpp)
-add_executable(C ${SOURCE_FILES})
-
-target_link_libraries( C ${OpenCV_LIBS} )
+add_executable( main main.cpp)
+target_link_libraries( main ${OpenCV_LIBS} )
