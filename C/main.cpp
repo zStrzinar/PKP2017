@@ -89,24 +89,35 @@ int main (int argc, char ** argv){
     int maxEMsteps = 10; // MATLAB: example.m:39 % detector constructor
     cv::Mat PI_i = Mat(); // MATLAB: example.m:39 % detector constructor
     std::vector<cv::Mat> mix_Mu, mix_Cov, mix_w, static_prec;
-    loadPriorModelFromDisk(colorSpace, mix_Mu, mix_Cov, mix_w, static_prec);
-    /*std::cout   << "Mix_Cov: " << std::endl
-                << "page 1: " << mix_Cov[0] << std::endl
-                << "page 2: " << mix_Cov[1] << std::endl
-                << "page 3: " << mix_Cov[2] << std::endl
-                << "Mix_mu: " << std::endl
-                << "page 1: " << mix_Mu[0] << std::endl
-                << "page 2: " << mix_Mu[1] << std::endl
-                << "page 3: " << mix_Mu[2] << std::endl
-                << "mix_w: " << std::endl
-                << "page 1: " << mix_w[0] << std::endl
-                << "page 2: " << mix_w[1] << std::endl
-                << "page 3: " << mix_w[2] << std::endl
-                << "static_prec: " << std::endl
-                << "page 1: " << static_prec[0] << std::endl
-                << "page 2: " << static_prec[1] << std::endl
-                << "page 3: " << static_prec[2] << std::endl;*/
+    loadPriorModelFromDisk(colorSpace, mix_Mu, mix_Cov, mix_w, static_prec); // hardcoded values
+    int velikost[] = {50,50};
+    std::vector<int> em_image_size(velikost,velikost+2);
 
+    // Spacial data mora biti: v prvi vrstici 1:50 potem pa spet 1:50 in spet 1:50  petdesetkrat...
+    // V drugi vrstici pa mora biti najprej 50x 1 potem 50x 2 potem 50x 3 in tako naprej do 50.
+    cv::Mat prvaVrstica_kratko(1,em_image_size[0],CV_64F);
+    int i;
+    for (i=0;i<em_image_size[0];i++){
+        prvaVrstica_kratko.at<double>(i)=i+1.0;
+    }
+    // prvaVrstica_kratko je zdaj [1,2,3,...,49,50]. Zdaj moram še 50x ponovit
+    cv::Mat prvaVrstica = repeat(prvaVrstica_kratko,1,em_image_size[1]); // ponovitve
+    // druga vrstica: najprej naredim stolpično matriko z vrednostmi [1,2,...,50]'.
+    // Potem jo razširim iz enega stolpca v 50 stolpcev [1,1,1,...,1,1;2,2,2...,2,2;...;50,50,...,50]
+    // Potem pa reshapeam iz 50 vrstic v 1 vrstico [1,1,...,1,1,2,2,...,2,2,....,50,5,...,50,50]
+    cv::Mat drugaVrstica_stolpicni(em_image_size[1],1,CV_64F);
+    for (i=0; i<em_image_size[1]; i++){
+        drugaVrstica_stolpicni.at<double>(i)=i+1.0;
+    } // stolpicni zapolnjen
+    cv::Mat drugaVrstica_matrika = repeat(drugaVrstica_stolpicni,1,em_image_size[0]); // stopiram stolpec 50x
+    cv::Mat drugaVrstica = drugaVrstica_matrika.reshape(0,1).clone();
+    // zlepim skupaj prvo in drugo vrstico
+    cv::Mat spatial_data(2,em_image_size[0]*em_image_size[1],CV_64F);
+    vconcat(prvaVrstica,drugaVrstica,spatial_data);
+    // dokončano
+    std::cout << "Detector initialized" << std::endl;
+
+    std::cout << "Beginning frame-by-frame algorithm" << std::endl;
     return 0;
 }
 
