@@ -25,9 +25,6 @@ void loadPriorModelFromDisk(Colorspace colorSpace,
                             std::vector<cv::Mat> &mix_w,
                             std::vector<cv::Mat> &static_prec);
 
-
-void simpleTest(std::vector<cv::Mat> &io);
-
 int main (int argc, char ** argv){
     std::string inputPath, outputPath;
     std::string inputFormat, outputFormat;
@@ -112,16 +109,84 @@ int main (int argc, char ** argv){
     cv::Mat drugaVrstica_matrika = repeat(drugaVrstica_stolpicni,1,em_image_size[0]); // stopiram stolpec 50x
     cv::Mat drugaVrstica = drugaVrstica_matrika.reshape(0,1).clone();
     // zlepim skupaj prvo in drugo vrstico
-    cv::Mat spatial_data(2,em_image_size[0]*em_image_size[1],CV_64F);
-    vconcat(prvaVrstica,drugaVrstica,spatial_data);
+    cv::Mat spatial_data;//(2,em_image_size[0]*em_image_size[1],CV_64F);
+    cv::vconcat(prvaVrstica,drugaVrstica,spatial_data);
+    spatial_data = spatial_data.clone();
     // dokončano
     std::cout << "Detector initialized" << std::endl;
 
     std::cout << "Beginning frame-by-frame algorithm" << std::endl;
+    int frame_number;
+    cv::Mat frame_original, frame_resized, frame_colorspace;
+    cv::Mat color_data_rows[3];
+    cv::Size resized_size = cv::Size(em_image_size[0],em_image_size[1]);
+    cv::Size original_size;
+
+//    namedWindow("Original",WINDOW_AUTOSIZE);
+//    namedWindow("Resized",WINDOW_AUTOSIZE);
+//    namedWindow("YcrCb",WINDOW_AUTOSIZE);
+    for(frame_number = 1; frame_number<=inputVideo.get(CV_CAP_PROP_FRAME_COUNT); frame_number++){
+        // TODO: od tukaj naprej preverjaj ali se zadeva ujema z MATLABOM oziroma od kod naprej se ne!
+        // začni kar s preverjenjem prvega frame-a
+        inputVideo >> frame_original;
+        resize(frame_original,frame_resized,resized_size);
+        switch (colorSpace){
+            case YCRCB:{
+                cv::cvtColor(frame_resized, frame_colorspace, CV_BGR2YCrCb);
+                break;
+            }
+            default:{
+                std::cerr<<"Unsupported colorspace!"<<std::endl;
+            }
+        }
+
+        cv::split(frame_colorspace,color_data_rows); // color_date_rows[0] je zdaj prvi kanal drame_colorspace
+        color_data_rows[0] = color_data_rows[0].reshape(0,1).clone(); // color_data_rows[0] rata vrstična matrika. Prvih 50 vrednosti je iz prve vrstice originala, naslednih 50 je iz naslednje vrstice originala itd.
+        color_data_rows[1] = color_data_rows[1].reshape(0,1).clone();
+        color_data_rows[2] = color_data_rows[2].reshape(0,1).clone();
+
+        cv::Mat color_data;//(3,em_image_size[0]*em_image_size[1],CV_64F);
+        cv::vconcat(color_data_rows,3,color_data);
+        color_data.convertTo(color_data,CV_64F);
+        // Zlepim skupaj color_data od frame in spatial_data
+        cv::Mat dataEM;//(5,em_image_size[0]*em_image_size[1],CV_64F);
+        cv::vconcat(spatial_data,color_data,dataEM);
+        original_size = frame_original.size();
+
+        std::cout << color_data << std::endl;
+
+        cv::Mat current_Mu[3], current_Cov[3], current_region;
+        double current_w[3];
+
+        if (frame_number==1){
+            float df[] = {0,0.3,0.5,1};
+            std::vector <float> vertical_ratio(df, df+sizeof(df)/sizeof(float) );
+            std::transform(vertical_ratio.begin(), vertical_ratio.end(), vertical_ratio.begin(),
+                           std::bind1st(std::multiplies<float>(),dataEM.cols));
+//            vertical_ratio[3]+=1;
+            int k;
+            for (k=0; k<=2; k++){
+                current_region = dataEM.colRange((int)vertical_ratio[k],(int)vertical_ratio[k+1]);
+                current_w[k]=1/3;
+                cv::calcCovarMatrix(current_region, current_Cov[k], current_Mu[k], CV_COVAR_NORMAL|CV_COVAR_COLS);
+                current_Cov[k] = current_Cov[k] / (current_region.cols - 1);
+            }
+            std::cout << "Covariance, region 1:" << std::endl << current_Cov[0] << std::endl;
+            std::cout << "Covariance, region 2:" << std::endl << current_Cov[1] << std::endl;
+            std::cout << "Covariance, region 3:" << std::endl << current_Cov[2] << std::endl;
+
+            std::cout << "Mean, region 1:" << std::endl << current_Mu[0] << std::endl;
+            std::cout << "Mean, region 2:" << std::endl << current_Mu[1] << std::endl;
+            std::cout << "Mean, region 3:" << std::endl << current_Mu[2] << std::endl;
+
+        }
+        else{
+
+        }
+        std::cout << "Frame " << frame_number << " done" << std::endl;
+    }
     return 0;
 }
-
-
 
 void loadPriorModelFromDisk(Colorspace colorSpace,
                             std::vector<cv::Mat> &mix_Mu,
