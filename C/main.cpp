@@ -12,8 +12,6 @@ using namespace cv;
 using namespace std;
 
 int main (int argc, char ** argv){
-
-
     // -------------------------- Obdelava vhodnih argumentov ----------------------------------------------------------
     // Najprej samo obdelava vhodnih argumentov
     //  cilj obdelave je, da imamo na koncu inputPath, outputPath, inputFormat in outputFormat
@@ -75,36 +73,40 @@ int main (int argc, char ** argv){
     bool use_prior_on_mixture = true; // MATLAB: example.m:39 % detector constructor
     bool use_uniform_component = true; // MATLAB: example.m:39 % detector constructor
     Colorspace colorSpace = YCRCB; // MATLAB: example.m:39 % detector constructor
-    double min_lik_delta = 1e-2; // MATLAB: example.m:39 % detector constructor
+//    double min_lik_delta = 1e-2; // MATLAB: example.m:39 % detector constructor
     int maxEMsteps = 10; // MATLAB: example.m:39 % detector constructor
-    cv::Mat PI_i = Mat(); // MATLAB: example.m:39 % detector constructor
-    std::vector<cv::Mat> mix_Mu, mix_Cov, mix_w, static_prec;
-    loadPriorModelFromDisk(colorSpace, mix_Mu, mix_Cov, mix_w, static_prec); // hardcoded values
-    int velikost[] = {50,50};
-    std::vector<int> em_image_size(velikost,velikost+2);
-
+    cv::Mat PI_i = cv::Mat(); // MATLAB: example.m:39 % detector constructor
+    std::vector<cv::Mat> current_mix_Mu, current_mix_Cov, current_mix_W, current_mix_Prec;
+    std::vector<cv::Mat> prior_mix_Mu, prior_mix_Cov, prior_mix_W, prior_mix_Prec;
+    loadPriorModelFromDisk(colorSpace, prior_mix_Mu, prior_mix_Cov, prior_mix_W, prior_mix_Prec); // hardcoded values
+//    int velikost[] = {50,50};
+//    std::vector<int> em_image_size(velikost,velikost+2);
+    cv::Size em_image_size(50,50);
+//    cv::Mat em_image_size_mat = cv::Mat(2,1,CV_32S, velikost).clone();
     // Spacial data mora biti: v prvi vrstici 1:50 potem pa spet 1:50 in spet 1:50  petdesetkrat...
     // V drugi vrstici pa mora biti najprej 50x 1 potem 50x 2 potem 50x 3 in tako naprej do 50.
-    cv::Mat prvaVrstica_kratko(1,em_image_size[0],CV_64F);
+    cv::Mat prvaVrstica_kratko(1,em_image_size.width,CV_64F);
     int i;
-    for (i=0;i<em_image_size[0];i++){
+    for (i=0;i<em_image_size.width;i++){
         prvaVrstica_kratko.at<double>(i)=i+1.0;
     }
     // prvaVrstica_kratko je zdaj [1,2,3,...,49,50]. Zdaj moram še 50x ponovit
-    cv::Mat prvaVrstica = repeat(prvaVrstica_kratko,1,em_image_size[1]); // ponovitve
+    cv::Mat prvaVrstica = repeat(prvaVrstica_kratko,1,em_image_size.height); // ponovitve
     // druga vrstica: najprej naredim stolpično matriko z vrednostmi [1,2,...,50]'.
     // Potem jo razširim iz enega stolpca v 50 stolpcev [1,1,1,...,1,1;2,2,2...,2,2;...;50,50,...,50]
     // Potem pa reshapeam iz 50 vrstic v 1 vrstico [1,1,...,1,1,2,2,...,2,2,....,50,5,...,50,50]
-    cv::Mat drugaVrstica_stolpicni(em_image_size[1],1,CV_64F);
-    for (i=0; i<em_image_size[1]; i++){
+    cv::Mat drugaVrstica_stolpicni(em_image_size.height,1,CV_64F);
+    for (i=0; i<em_image_size.height; i++){
         drugaVrstica_stolpicni.at<double>(i)=i+1.0;
     } // stolpicni zapolnjen
-    cv::Mat drugaVrstica_matrika = repeat(drugaVrstica_stolpicni,1,em_image_size[0]); // stopiram stolpec 50x
+    cv::Mat drugaVrstica_matrika = repeat(drugaVrstica_stolpicni,1,em_image_size.width); // stopiram stolpec 50x
     cv::Mat drugaVrstica = drugaVrstica_matrika.reshape(0,1).clone();
     // zlepim skupaj prvo in drugo vrstico
     cv::Mat spatial_data;//(2,em_image_size[0]*em_image_size[1],CV_64F);
     cv::vconcat(prvaVrstica,drugaVrstica,spatial_data);
     spatial_data = spatial_data.clone();
+    std::string type_of_em = "em_seg"; // em_basic em_seg em_basic_no_smooth
+
     // ----------------------- nastavitve dokončane --------------------------------------------------------------------
 
     std::cout << "Detector initialized" << std::endl;
@@ -113,7 +115,7 @@ int main (int argc, char ** argv){
     int frame_number;
     cv::Mat frame_original, frame_resized, frame_colorspace;
     cv::Mat color_data_rows[3];
-    cv::Size resized_size(em_image_size[0],em_image_size[1]);
+    cv::Size resized_size(em_image_size.width,em_image_size.height);
     cv::Size original_size;
 
     for(frame_number = 1; frame_number<=inputVideo.get(CV_CAP_PROP_FRAME_COUNT); frame_number++){
@@ -145,7 +147,7 @@ int main (int argc, char ** argv){
         cv::vconcat(spatial_data,color_data,dataEM); // Zlepim skupaj color_data in spatial_data
 
         cv::Mat current_Mu[3], current_Cov[3], current_region;
-
+//        cv::Mat current_region;
 //        std::cout << dataEM << std::endl;
 
         double current_w[3];
@@ -160,24 +162,27 @@ int main (int argc, char ** argv){
                 current_w[k]=1/3;
                 cv::calcCovarMatrix(current_region, current_Cov[k], current_Mu[k], CV_COVAR_NORMAL|CV_COVAR_COLS);
                 current_Cov[k] = current_Cov[k] / (current_region.cols - 1);
+                current_mix_W.insert(current_mix_W.end(), cv::Mat(1,1,CV_64F, Scalar(1/3)));
+                current_mix_Cov.insert(current_mix_Cov.end(), current_Cov[k]);
+                current_mix_Mu.insert(current_mix_Mu.end(), current_Mu[k]);
             }
-            std::cout << "Covariance, region 1:" << std::endl << current_Cov[0] << std::endl;
-            std::cout << "Covariance, region 2:" << std::endl << current_Cov[1] << std::endl;
-            std::cout << "Covariance, region 3:" << std::endl << current_Cov[2] << std::endl;
+            std::cout << "Covariance, region 1:" << std::endl << current_mix_Cov[0] << std::endl;
+            std::cout << "Covariance, region 2:" << std::endl << current_mix_Cov[1] << std::endl;
+            std::cout << "Covariance, region 3:" << std::endl << current_mix_Cov[2] << std::endl;
 
-            std::cout << "Mean, region 1:" << std::endl << current_Mu[0] << std::endl;
-            std::cout << "Mean, region 2:" << std::endl << current_Mu[1] << std::endl;
-            std::cout << "Mean, region 3:" << std::endl << current_Mu[2] << std::endl;
-
+            std::cout << "Mean, region 1:" << std::endl << current_mix_Mu[0] << std::endl;
+            std::cout << "Mean, region 2:" << std::endl << current_mix_Mu[1] << std::endl;
+            std::cout << "Mean, region 3:" << std::endl << current_mix_Mu[2] << std::endl;
         }
         else{
             // TODO: detect_edge_of_sea_simplified.m:93
         }
 
-
-
+        cv::Mat Q_sum_large, mix_PI_i;
+        run_SSM(colorSpace, em_image_size, use_uniform_component, type_of_em,
+                maxEMsteps, current_mix_W, PI_i, dataEM, current_mix_Mu, current_mix_Cov, prior_mix_Mu,
+                prior_mix_Prec, use_prior_on_mixture, 2 ^ -52, Q_sum_large, mix_PI_i);
         std::cout << "Frame " << frame_number << " done" << std::endl;
     }
     return 0;
 }
-

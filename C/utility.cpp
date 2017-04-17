@@ -124,48 +124,35 @@ cv::Mat Bsxfun(cv::Mat inputMat, cv::Mat bsxParam, BsxFunOp op=DIVIDE){
     result = result.reshape(channels, rows);
     return result;
 }
-void mexFunction(Colorspace colorSpace, cv::Mat sizeMask, bool use_uniform_component, double p_unknown,
-                 std::string type_of_em, double min_lik_delta, int maxEMsteps, cv::Mat &mix_w, cv::Mat &PI_i,
-                 cv::Mat &data, cv::Mat &mix_Mu, cv::Mat &mix_Cov, cv::Mat mix_priorOverMeans_static_Mu, cv::Mat static_prec,
-                 bool use_prior_on_mixture, double epsilon, cv::Mat &Q_sum_large, cv::Mat &mix_PI_i){
+void run_SSM(Colorspace colorSpace,
+             cv::Size sizeMask,
+             bool use_uniform_component,
+             std::string type_of_em,
+             int maxEMsteps,
+             vector<cv::Mat> &mix_w,
+             cv::Mat &PI_i,
+             cv::Mat &data,
+             vector<cv::Mat> &mix_Mu,
+             vector<cv::Mat> &mix_Cov,
+             vector<cv::Mat> prior_mix_Mu,
+             vector<cv::Mat> prior_mix_Prec,
+             bool use_prior_on_mixture,
+             double epsilon,
+             cv::Mat &Q_sum_large,
+             cv::Mat &mix_PI_i){
     try{
-//        Colorspace colorSpace = ResolveColorspace(MxArray(prhs[0]).toString());
-//        cv::Mat sizeMask = MxArray(prhs[1]).toMat();
-//        std::bool use_uniform_component = MxArray(prhs[2]).toBool();
-//        double p_unknown = GetUnknownWeightForTheFeatureModel(colorSpace, sizeMask, use_uniform_component);
-//        std::string type_of_em = MxArray(prhs[3]).toString(); // em_basic em_seg em_basic_no_smooth
-//        double min_lik_delta = MxArray(prhs[4]).toDouble();  // 1e-10 1e-2  (max change in likelihood to stop em)
-//        int maxEMsteps = MxArray(prhs[5]).toInt();			// 10 maximum number of em steps
-//        cv::Mat mix_w = MxArray(prhs[6]).toMat();
-//        cv::Mat PI_i = MxArray(prhs[7]).toMat();
-//        cv::Mat data = MxArray(prhs[8]).toMat();
-//        cv::Mat mix_Mu = MxArray(prhs[9]).toMat();
-//        cv::Mat mix_Cov = MxArray(prhs[10]).toMat();			//TODO: merge mix.Cov in MATLAB to one matrix with different channels
-//        cv::Mat mix_priorOverMeans_static_Mu = MxArray(prhs[11]).toMat();
-//        cv::Mat static_prec = MxArray(prhs[12]).toMat();
-//        bool use_prior_on_mixture = MxArray(prhs[13]).toBool();
-//        double epsilon = MxArray(prhs[14]).toDouble();
-
-
-        /* Split channels to get instant access later*/
-        vector<cv::Mat> mix_priorOverMeans_static_Prec(3);
-        cv::split(static_prec, mix_priorOverMeans_static_Prec);
-
-        vector<cv::Mat> mix_Cov_ch(3);
-        cv::split(mix_Cov, mix_Cov_ch);
-        /* End split channels */
-
+        double p_unknown = GetUnknownWeightForTheFeatureModel(colorSpace, sizeMask, use_uniform_component);
         bool use_gauss = false;
-        int sizMix = mix_w.cols;
+        int sizMix = (int)mix_w.size();
+
         // construct convolution kernels H_0 and H_1 for the em posteriors
-        cv::Mat H_0;
-        cv::Mat H_1;
+        cv::Mat H_0, H_1;
         GetConvolutionKernel(type_of_em, sizeMask, H_0, H_1);
 
         if (PI_i.empty())
         {
             double estimate = 1.0/sizMix - p_unknown/sizMix;
-            PI_i = cv::Mat_<cv::Vec4d>(sizeMask.at<double>(0,1), sizeMask.at<double>(0,0), cv::Vec4d(estimate, estimate, estimate, p_unknown));
+            PI_i = cv::Mat_<cv::Vec4d>(sizeMask.height, sizeMask.width, cv::Vec4d(estimate, estimate, estimate, p_unknown));
         }
 
         cv::Mat PI_i0 = PI_i.clone();
@@ -183,15 +170,15 @@ void mexFunction(Colorspace colorSpace, cv::Mat sizeMask, bool use_uniform_compo
                 if (type_of_em.compare("em_seg") == 0)
                 {
                     //TODO: speed test for both
-                    cv::Mat pdf = normpdf(data.clone(), mix_Mu.col(i), prec, mix_Cov_ch[i], epsilon);
+                    cv::Mat pdf = normpdf(data.clone(), mix_Mu[i], prec, mix_Cov[i], epsilon);
                     pdf = pdf.t();
                     pdf.copyTo(p.row(i));
                     //pdf.row(0).copyTo(p.row(i));
                 }
                 else
                 {
-                    cv::Mat pdf = normpdf(data.clone(), mix_Mu.col(i), prec, mix_Cov_ch[i], epsilon);
-                    pdf = pdf.t()*mix_w.at<double>(i);
+                    cv::Mat pdf = normpdf(data.clone(), mix_Mu[i], prec, mix_Cov[i], epsilon);
+                    pdf = pdf.t()*mix_w[i];
                     pdf.row(0).copyTo(p.row(i));
                 }
             }
@@ -205,7 +192,7 @@ void mexFunction(Colorspace colorSpace, cv::Mat sizeMask, bool use_uniform_compo
             /*p.convertTo(p, CV_64FC4);
             PI_i.convertTo(PI_i, CV_64FC4);		*/
             p = p.t();
-            p = p.reshape(sizMix+1, sizeMask.at<double>(0,1)).t();
+            p = p.reshape(sizMix+1, sizeMask.height).t();
 
             P_i = PI_i.mul(p) + epsilon;
             if (!use_uniform_component)
@@ -282,8 +269,9 @@ void mexFunction(Colorspace colorSpace, cv::Mat sizeMask, bool use_uniform_compo
             }
 
             cv::Mat Q_sumT;
-            Q_sum = Q_sum.t();
-            p = Q_sumT.reshape(1,sizeMask.at<double>(0,0)*sizeMask.at<double>(0,1)).t();
+            Q_sumT = Q_sum.t(); // prej je bilo tukaj Q_sum = Q_sum.t(); ???
+//            std::cout << Q_sumT << std::endl;
+            p = Q_sumT.reshape(1,sizeMask.area()).t(); // Q_sumT prej sploh ni bil inicializiran!
 
             //measure the change in posterior distribution
             cv::Mat d_pi;
@@ -301,7 +289,7 @@ void mexFunction(Colorspace colorSpace, cv::Mat sizeMask, bool use_uniform_compo
             double max;
             double min;
             cv::minMaxLoc(d_pi, &min,&max);
-            int mid = std::ceil(d_pi.rows/2);
+            int mid = (int)std::ceil(d_pi.rows/2);
             cv::Mat dpi = d_pi(cv::Range(mid,d_pi.rows),cv::Range::all());
             cv::Scalar loglik_new = cv::mean(dpi);
             if (loglik_new.val[0] > 0.01) // 0.001
@@ -339,62 +327,43 @@ void mexFunction(Colorspace colorSpace, cv::Mat sizeMask, bool use_uniform_compo
 
                 cv::reduce(w_data, x_mu, 1, CV_REDUCE_SUM);
                 x_mu = x_mu/sum_pk;
+                x_2_mu = (data*w_data.t())/sum_pk ;
+                c = x_2_mu - x_mu*x_mu.t();
 
-                /*cv::Mat data = MxArray(prhs[0]).toMat();
-                cv::Mat w_data = MxArray(prhs[1]).toMat();
-                cv::Mat sum_pk = MxArray(prhs[2]).toMat();
-                cv::Mat x_mu = MxArray(prhs[3]).toMat();
-                bool use_prior_on_mixture = MxArray(prhs[4]).toBool();
-                cv::Mat mix_Mu = MxArray(prhs[5]).toMat();
-                cv::Mat mix_Cov = MxArray(prhs[6]).toMat();
-                cv::Mat mix_priorOverMeans_static_Mu = MxArray(prhs[7]).toMat();
-                cv::Mat static_prec = MxArray(prhs[8]).toMat();
-                cv::Mat mix_w = MxArray(prhs[9]).toMat();
-                cv::Mat alpha_i = MxArray(prhs[10]).toMat();		*/
-
-                cv::Mat x_2_mu = (data*w_data.t())/sum_pk ;
-                cv::Mat c = x_2_mu - x_mu*x_mu.t();
-
-                // naiive update of mean and covariance
-                mix_Cov_ch[k] = c;
-                x_mu.copyTo(mix_Mu.col(k));
-                mix_w.at<double>(0,k) = alpha_i.at<double>(0,k);
+                // naive update of mean and covariance
+                mix_Cov[k] = c;
+                x_mu.copyTo(mix_Mu[k]);
+                mix_w[k].at<double>(0) = alpha_i.at<double>(0,k);
                 cv::Mat res;
                 if (use_prior_on_mixture)
                 {
                     int i_c_d=k;
-                    int i_c_o=k;
+//                    int i_c_o=k;
                     int i_c_0 = k;
-                    res = mergePd(mix_Mu.col(i_c_d), mix_Cov_ch[k],
-                                  mix_priorOverMeans_static_Mu.col(i_c_0),
-                                  cv::Mat(), mix_priorOverMeans_static_Prec[i_c_0]);
-                    res.copyTo(mix_Mu.col(i_c_d));
-
-                    /*mix.Mu(:,i_c_d) = mergePd( mix.Mu(:,i_c_d), mix.Cov{i_c_d} , ...
-                                               mix.priorOverMeans.static.Mu(:,i_c_0),...
-                                               [], mix.priorOverMeans.static.Prec{i_c_0} ) ; */
+                    res = mergePd(mix_Mu[i_c_d], mix_Cov[k],
+                                  prior_mix_Mu[i_c_0],
+                                  cv::Mat(), prior_mix_Prec[i_c_0]);
+                    res.copyTo(mix_Mu[i_c_d]);
                 }
             }
 
-            double mix_w_sum = cv::sum(mix_w).val[0];
-            mix_w = mix_w/mix_w_sum;
+            cv::Mat mix_w_sum_mat(1,1,CV_64F,Scalar(0));
+            double mix_w_sum;
+            int i;
+            for (i=0; i<mix_w.size(); i++){
+                mix_w_sum_mat += mix_w[i];
+            }
+            mix_w_sum = mix_w_sum_mat.at<double>(0);
+            for (i=0; i<mix_w.size(); i++){
+                mix_w[0] = mix_w[0]/mix_w_sum;
+            }
             counter = counter-1;
-            break;
+//            break;
         }
 
-        /*% cont
-        % some Laplace smoothing with the lack of a better prediction
-        % bet = 0.05 ;
-        % Q_sum = (Q_sum+bet)/(1 + size(Q_sum,3)*bet) ;
-        % intialize the next time-step prior
-        */
 
         Q_sum_large = Q_sum;
         mix_PI_i = Q_sum; //PI_i ;
-
-        cv::merge(mix_Cov_ch, mix_Cov);
-        mix_Mu;
-        mix_w;
 
         ////TODO:
         ////% resegment using only color if requires
@@ -406,20 +375,6 @@ void mexFunction(Colorspace colorSpace, cv::Mat sizeMask, bool use_uniform_compo
         {
             //TODO: log.warn("The EM did not converge in %d iterations",maxEMsteps);
         }
-
-        ////TODO:
-        /*if output_debug_info==1
-           debug_info = length(history_of_loglik) ;
-        end*/
-
-        //mix, Q_sum_large, PI_i, debug_info
-
-//        plhs[0] = MxArray(mix_Mu);
-//        plhs[1] = MxArray(mix_w);
-//        plhs[2] = MxArray(mix_Cov);
-//        plhs[3] = MxArray(mix_PI_i);
-//        plhs[4] = MxArray(Q_sum_large);
-//        plhs[5] = MxArray(PI_i);
 
     }catch(cv::Exception& ex){
         const char* err_msg = ex.what();
@@ -458,13 +413,13 @@ Resolves and returns enum for a given color space
         return NONE;
     }
 }
-double GetUnknownWeightForTheFeatureModel(Colorspace type_colorspace,cv::Mat sizeMask, bool use_uniform_component){
+double GetUnknownWeightForTheFeatureModel(Colorspace type_colorspace,cv::Size sizeMask, bool use_uniform_component){
     double p_unknown = 0;
     if (!use_uniform_component){
         return 0;
     }
 
-    double p = prod(sizeMask);
+    double p = sizeMask.area();
     switch(type_colorspace){
         case HSV:
             p_unknown = 1/p ;
@@ -484,7 +439,7 @@ double GetUnknownWeightForTheFeatureModel(Colorspace type_colorspace,cv::Mat siz
     }
     return p_unknown;
 }
-void  GetConvolutionKernel(std::string type_of_em, cv::Mat sizeMask, cv::Mat& H_0, cv::Mat& H_1){
+void  GetConvolutionKernel(std::string type_of_em, cv::Size sizeMask, cv::Mat& H_0, cv::Mat& H_1){
     /**
     Calculates gaussian kernels used in segmentation
 
@@ -496,7 +451,7 @@ void  GetConvolutionKernel(std::string type_of_em, cv::Mat sizeMask, cv::Mat& H_
     double scale_filter = 0.1;
     if (type_of_em.compare("em_seg") == 0)
     {
-        double hsize = std::ceil(0.2*(sizeMask.at<double>(0, 1)*scale_filter - 1));
+        double hsize = std::ceil(0.2*(sizeMask.height*scale_filter - 1));
         cv::Mat H_0_vector = cv::getGaussianKernel(hsize*2+1, hsize/1.5);
         H_0 =  H_0_vector*H_0_vector.t();
         int center = hsize;
@@ -510,7 +465,7 @@ void  GetConvolutionKernel(std::string type_of_em, cv::Mat sizeMask, cv::Mat& H_
         H_1.at<double>(center, center) = 1;
     }
     else if(type_of_em.compare("em_basic") == 0){
-        int hsize = std::ceil(0.2*(sizeMask.at<double>(0, 1)*scale_filter - 1));
+        int hsize = std::ceil(0.2*(sizeMask.height*scale_filter - 1));
         cv::Mat H_0_vector = cv::getGaussianKernel(hsize*2+1, hsize/1.5);
         H_0 = H_0_vector.t()*H_0_vector;
     }
