@@ -115,37 +115,57 @@ int main (int argc, char ** argv){
     int frame_number;
     cv::Mat frame_original, frame_resized, frame_colorspace;
     cv::Mat color_data_rows[3];
-    cv::Size resized_size(em_image_size.width,em_image_size.height);
+    cv::Size resized_size(em_image_size.width*4,em_image_size.height*4);
     cv::Size original_size;
-
+    cv::namedWindow("Moje okno",WINDOW_AUTOSIZE);
     for(frame_number = 1; frame_number<=inputVideo.get(CV_CAP_PROP_FRAME_COUNT); frame_number++){
         inputVideo.set(CV_CAP_PROP_POS_FRAMES, frame_number-1);
         inputVideo >> frame_original;
 
+        frame_original = imread("00001.jpg", CV_LOAD_IMAGE_COLOR); // TODO: to je samo za debug!
         original_size = frame_original.size();
 
-        cv::resize(frame_original,frame_resized,resized_size,0,0,CV_INTER_LINEAR);
+        cv::resize(frame_original,frame_resized,resized_size,0,0,INTER_LINEAR);
+
+        frame_resized = imread("temp.jpg", CV_LOAD_IMAGE_COLOR); // TODO: to je samo za debugiranje!
+
+
         switch (colorSpace){
             case YCRCB:{
                 cv::cvtColor(frame_resized, frame_colorspace, CV_BGR2YCrCb);
                 break;
             }
+            case HSV:break;
+            case RGB:break;
+            case LAB:break;
+            case YCRS:break;
+            case NONE:break;
             default:{
                 std::cerr<<"Unsupported colorspace!"<<std::endl;
             }
         }
 
         cv::split(frame_colorspace,color_data_rows); // color_date_rows[0] je zdaj prvi kanal frame_colorspace
-        color_data_rows[0] = color_data_rows[0].reshape(0,1).clone(); // color_data_rows[0] rata vrstična matrika. Prvih 50 vrednosti je iz prve vrstice originala, naslednih 50 je iz naslednje vrstice originala itd.
-        color_data_rows[1] = color_data_rows[1].reshape(0,1).clone();
-        color_data_rows[2] = color_data_rows[2].reshape(0,1).clone();
+        if (colorSpace == YCRCB){
+                    cv::Mat temp;
+                    temp = color_data_rows[1].clone();
+                    color_data_rows[0] = color_data_rows[0].reshape(0, 1).clone(); // color_data_rows[0] rata vrstična matrika. Prvih 50 vrednosti je iz prve vrstice originala, naslednih 50 je iz naslednje vrstice originala itd.
+                    color_data_rows[1] = color_data_rows[2].reshape(0, 1).clone();
+                    color_data_rows[2] = temp.reshape(0, 1).clone();
+            }
+        else{
+            color_data_rows[0] = color_data_rows[0].reshape(0, 1).clone(); // color_data_rows[0] rata vrstična matrika. Prvih 50 vrednosti je iz prve vrstice originala, naslednih 50 je iz naslednje vrstice originala itd.
+            color_data_rows[1] = color_data_rows[1].reshape(0, 1).clone();
+            color_data_rows[2] = color_data_rows[2].reshape(0, 1).clone();
+        }
+
 
         cv::Mat color_data;//(3,em_image_size[0]*em_image_size[1],CV_64F);
         cv::vconcat(color_data_rows,3,color_data); // zlepim rows v color_data
         color_data.convertTo(color_data,CV_64F);
         cv::Mat dataEM;//(5,em_image_size[0]*em_image_size[1],CV_64F);
         cv::vconcat(spatial_data,color_data,dataEM); // Zlepim skupaj color_data in spatial_data
-
+        std::cout << std::endl << dataEM << std::endl;
         cv::Mat current_Mu[3], current_Cov[3], current_region;
 //        cv::Mat current_region;
 //        std::cout << dataEM << std::endl;
@@ -159,26 +179,52 @@ int main (int argc, char ** argv){
             int k;
             for (k=0; k<=2; k++){
                 current_region = dataEM.colRange((int)vertical_ratio[k],(int)vertical_ratio[k+1]);
-                current_w[k]=1/3;
+                current_w[k]=1.0/3.0;
                 cv::calcCovarMatrix(current_region, current_Cov[k], current_Mu[k], CV_COVAR_NORMAL|CV_COVAR_COLS);
                 current_Cov[k] = current_Cov[k] / (current_region.cols - 1);
-                current_mix_W.insert(current_mix_W.end(), cv::Mat(1,1,CV_64F, Scalar(1/3)));
+                current_mix_W.insert(current_mix_W.end(), cv::Mat(1,1,CV_64F, Scalar(1.0/3.0)));
                 current_mix_Cov.insert(current_mix_Cov.end(), current_Cov[k]);
                 current_mix_Mu.insert(current_mix_Mu.end(), current_Mu[k]);
             }
-            std::cout << "Covariance, region 1:" << std::endl << current_mix_Cov[0] << std::endl;
+            /*std::cout << "Covariance, region 1:" << std::endl << current_mix_Cov[0] << std::endl;
             std::cout << "Covariance, region 2:" << std::endl << current_mix_Cov[1] << std::endl;
             std::cout << "Covariance, region 3:" << std::endl << current_mix_Cov[2] << std::endl;
 
             std::cout << "Mean, region 1:" << std::endl << current_mix_Mu[0] << std::endl;
             std::cout << "Mean, region 2:" << std::endl << current_mix_Mu[1] << std::endl;
-            std::cout << "Mean, region 3:" << std::endl << current_mix_Mu[2] << std::endl;
+            std::cout << "Mean, region 3:" << std::endl << current_mix_Mu[2] << std::endl;*/
         }
         else{
             // TODO: detect_edge_of_sea_simplified.m:93
         }
 
         cv::Mat Q_sum_large, mix_PI_i;
+        std::cout << "colorSpace: " << colorSpace << std::endl
+                  << "em_image size: " << em_image_size << std::endl
+                  << "use_uniform_component: " << use_uniform_component << std::endl
+                  << "type_of_em: " << type_of_em << std::endl
+                  << "maxEMsteps: " << maxEMsteps << std::endl
+                  << "current_mix_W[0]: " << current_mix_W[0] << std::endl
+                  << "current_mix_W[1]: " << current_mix_W[1] << std::endl
+                  << "current_mix_W[2]: " << current_mix_W[2] << std::endl
+                  << "current_mix_Mu[0]: " << current_mix_Mu[0] << std::endl
+                  << "current_mix_Mu[1]: " << current_mix_Mu[1] << std::endl
+                  << "current_mix_Mu[2]: " << current_mix_Mu[2] << std::endl
+                  << "current_mix_Cov[0]: " << current_mix_Cov[0] << std::endl
+                  << "current_mix_Cov[1]: " << current_mix_Cov[1] << std::endl
+                  << "current_mix_Cov[2]: " << current_mix_Cov[2] << std::endl
+                << "prior_mix_W[0]: " << prior_mix_W[0] << std::endl
+                << "prior_mix_W[1]: " << prior_mix_W[1] << std::endl
+                << "prior_mix_W[2]: " << prior_mix_W[2] << std::endl
+                << "prior_mix_Mu[0]: " << prior_mix_Mu[0] << std::endl
+                << "prior_mix_Mu[1]: " << prior_mix_Mu[1] << std::endl
+                << "prior_mix_Mu[2]: " << prior_mix_Mu[2] << std::endl
+                << "prior_mix_Cov[0]: " << prior_mix_Cov[0] << std::endl
+                << "prior_mix_Cov[1]: " << prior_mix_Cov[1] << std::endl
+                << "prior_mix_Cov[2]: " << prior_mix_Cov[2] << std::endl
+                << "prior_mix_Prec[0]: " << prior_mix_Prec[0] << std::endl
+                << "prior_mix_Prec[1]: " << prior_mix_Prec[1] << std::endl
+                << "prior_mix_Prec[2]: " << prior_mix_Prec[2] << std::endl;
         run_SSM(colorSpace, em_image_size, use_uniform_component, type_of_em,
                 maxEMsteps, current_mix_W, PI_i, dataEM, current_mix_Mu, current_mix_Cov, prior_mix_Mu,
                 prior_mix_Prec, use_prior_on_mixture, 2 ^ -52, Q_sum_large, mix_PI_i);
