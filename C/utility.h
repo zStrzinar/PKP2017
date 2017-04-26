@@ -38,5 +38,5 @@ double GetUnknownWeightForTheFeatureModel(Colorspace type_colorspace,cv::Size si
 void  GetConvolutionKernel(std::string type_of_em, cv::Size sizeMask, cv::Mat& H_0, cv::Mat& H_1);
 cv::Mat normpdf(cv::Mat x, cv::Mat mu, cv::Mat prec, cv::Mat sigma, double epsilon);
 cv::Mat mergePd(cv::Mat mu_d, cv::Mat c_d, cv::Mat mu_0, cv::Mat c0,cv::Mat ic0);
-//void getEdgeAndObjectsNoScaling()
+
 #endif //PKP2017_UTILITY_H

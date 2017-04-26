@@ -7,6 +7,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
 #include "utility.h"
+#include "objectDetection.h"
 
 using namespace cv;
 using namespace std;
@@ -225,8 +226,8 @@ int main (int argc, char ** argv){
                   << "prior_mix_Cov[2]: " << prior_mix_Cov[2] << std::endl
                   << "prior_mix_Prec[0]: " << prior_mix_Prec[0] << std::endl
                   << "prior_mix_Prec[1]: " << prior_mix_Prec[1] << std::endl
-                  << "prior_mix_Prec[2]: " << prior_mix_Prec[2] << std::endl;
-        run_SSM(colorSpace, em_image_size, use_uniform_component, type_of_em, // TODO: samo za debugiranje
+                  << "prior_mix_Prec[2]: " << prior_mix_Prec[2] << std::endl; // TODO: samo za debugiranje
+        run_SSM(colorSpace, em_image_size, use_uniform_component, type_of_em,
                 maxEMsteps, current_mix_W, PI_i, dataEM, current_mix_Mu, current_mix_Cov, prior_mix_Mu,
                 prior_mix_Prec, use_prior_on_mixture, eps, Q_sum_large, mix_PI_i);
 
@@ -237,6 +238,8 @@ int main (int argc, char ** argv){
         std::cout << "PI_i(:,:,3)=" << PI_i_channels[2] << std::endl; // TODO: samo za debugiranje
         std::cout << "PI_i(:,:,4)=" << PI_i_channels[3] << std::endl; // TODO: samo za debugiranje
         std::cout << "Frame " << frame_number << " done" << std::endl;
+
+        getEdgeAndObjectNoScaling(Q_sum_large, original_size);
     }
     return 0;
 }

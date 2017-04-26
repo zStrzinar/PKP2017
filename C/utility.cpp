@@ -188,15 +188,9 @@ void run_SSM(Colorspace colorSpace,
             cv::Mat P_i(PI_i.rows, PI_i.cols, CV_64FC4);
 
             //for the paper
-            /*p.convertTo(p, CV_64FC4);
-            PI_i.convertTo(PI_i, CV_64FC4);		*/
-            //std::cout << p << std::endl; // TODO: debug only!
             p = p.t();
-            //std::cout << p << std::endl; // TODO: debug only!
             p = p.reshape(sizMix+1, sizeMask.height).t();
-            //std::cout << p << std::endl; // TODO: debug only!
-            //p = p.t();
-            //std::cout << p << std::endl; // TODO: debug only!
+
             P_i = PI_i.mul(p) + epsilon;
             if (!use_uniform_component)
             {
@@ -234,8 +228,9 @@ void run_SSM(Colorspace colorSpace,
 
             cv::Mat S_i;
             cv::flip(H_0,H_0, -1);//switch order in both axes
-            cv::filter2D(PI_i, S_i, PI_i.depth(), H_0,cv::Point(-1,-1), 0.0,cv::BORDER_REPLICATE);
+            cv::filter2D(PI_i, S_i, PI_i.depth(), H_0,cv::Point(-1,-1), 0.0,cv::BORDER_REPLICATE); // Filtrira PI_i z jedrom H_0, rezultat je S_i
             S_i = PI_i.mul(S_i);
+
             //prepare the input for bsxfun
             rows = S_i.rows;
             bsxParam = S_i.reshape(1, rows*S_i.cols);
@@ -245,6 +240,7 @@ void run_SSM(Colorspace colorSpace,
 
             cv::Mat Q_i;
             cv::filter2D(P_i, Q_i, P_i.depth(), H_0,cv::Point(-1,-1), 0.0,cv::BORDER_REPLICATE);
+            //std::cout << std::endl << "Q_i: " << Q_i << std::endl; // TODO: samo za debugiranje
             Q_i = P_i.mul(Q_i);
             //prepare the input for bsxfun
             rows = Q_i.rows;
@@ -252,7 +248,7 @@ void run_SSM(Colorspace colorSpace,
             cv::reduce(bsxParam, bsxParam, 1, CV_REDUCE_SUM);
             bsxParam = bsxParam.reshape(1,rows);
             Q_i = Bsxfun(Q_i, bsxParam);
-
+            //std::cout << std::endl << "Q_i: " << Q_i << std::endl; // TODO: samo za debugiranje
             cv::Mat S_sum;
             cv::flip(H_1,H_1, -1);//switch order in both axes
             cv::filter2D(Q_i, Q_sum, Q_i.depth(), H_1,cv::Point(-1,-1), 0.0,cv::BORDER_REPLICATE);
@@ -274,18 +270,16 @@ void run_SSM(Colorspace colorSpace,
 
             cv::Mat Q_sumT;
             Q_sumT = Q_sum.t(); // prej je bilo tukaj Q_sum = Q_sum.t(); ???
-//            std::cout << Q_sumT << std::endl;
+            //std::cout << Q_sumT.colRange(0,5).rowRange(0,5) << std::endl;
             p = Q_sumT.reshape(1,sizeMask.area()).t(); // Q_sumT prej sploh ni bil inicializiran!
+            //std::cout << p << std::endl;
 
             //measure the change in posterior distribution
-            cv::Mat d_pi;
-            cv::Mat tmpMat;
-            cv::Mat tmpMat2;
+            cv::Mat d_pi, tmpMat, tmpMat2;
             cv::sqrt(PI_i0, tmpMat);
             cv::sqrt(PI_i, tmpMat2);
             d_pi = tmpMat - tmpMat2;
-            rows = d_pi.rows;
-            d_pi = d_pi.reshape(1, rows*d_pi.cols);
+            d_pi = d_pi.reshape(1, d_pi.rows*d_pi.cols);
             cv::reduce(d_pi, d_pi, 1, CV_REDUCE_SUM);
             //d_pi = d_pi.reshape(1, rows);
 
@@ -307,9 +301,9 @@ void run_SSM(Colorspace colorSpace,
 
             cv::Mat lp;
             cv::reduce(p,lp,0,CV_REDUCE_SUM);
+
             cv::repeat(lp, 4,1,lp);
             p = Bsxfun(p, lp);
-
             CvScalar x = cv::sum(PI_i);
             cv::Matx14d a_i(x.val[0], x.val[1], x.val[2], x.val[3]); //cv::Mat(1,4,CV_64F,x);
             cv::Mat alpha_i = cv::Mat(a_i);
