@@ -29,7 +29,7 @@ void run_SSM(Colorspace colorSpace,
              std::vector<cv::Mat> prior_mix_Mu,
              std::vector<cv::Mat> prior_mix_Prec,
              bool use_prior_on_mixture,
-             double epsilon,
+             long double epsilon,
              cv::Mat &Q_sum_large,
              cv::Mat &mix_PI_i);
 double prod(cv::Mat mat);

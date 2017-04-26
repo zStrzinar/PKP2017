@@ -137,7 +137,7 @@ void run_SSM(Colorspace colorSpace,
              vector<cv::Mat> prior_mix_Mu,
              vector<cv::Mat> prior_mix_Prec,
              bool use_prior_on_mixture,
-             double epsilon,
+             long double epsilon,
              cv::Mat &Q_sum_large,
              cv::Mat &mix_PI_i){
     try{
@@ -148,7 +148,6 @@ void run_SSM(Colorspace colorSpace,
         // construct convolution kernels H_0 and H_1 for the em posteriors
         cv::Mat H_0, H_1;
         GetConvolutionKernel(type_of_em, sizeMask, H_0, H_1);
-
         if (PI_i.empty())
         {
             double estimate = 1.0/sizMix - p_unknown/sizMix;
@@ -191,9 +190,13 @@ void run_SSM(Colorspace colorSpace,
             //for the paper
             /*p.convertTo(p, CV_64FC4);
             PI_i.convertTo(PI_i, CV_64FC4);		*/
+            //std::cout << p << std::endl; // TODO: debug only!
             p = p.t();
+            //std::cout << p << std::endl; // TODO: debug only!
             p = p.reshape(sizMix+1, sizeMask.height).t();
-
+            //std::cout << p << std::endl; // TODO: debug only!
+            //p = p.t();
+            //std::cout << p << std::endl; // TODO: debug only!
             P_i = PI_i.mul(p) + epsilon;
             if (!use_uniform_component)
             {
@@ -227,6 +230,7 @@ void run_SSM(Colorspace colorSpace,
             bsxParam = bsxParam.reshape(1,rows);
             //cv::divide(1.0, bsxParam, bsxParam);
             P_i = Bsxfun(P_i, bsxParam);
+
 
             cv::Mat S_i;
             cv::flip(H_0,H_0, -1);//switch order in both axes

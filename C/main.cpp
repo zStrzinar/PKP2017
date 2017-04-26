@@ -70,6 +70,7 @@ int main (int argc, char ** argv){
         std::cout << "Video file successfully opened" << endl;
 
     // Settings
+    long double eps = 2.2204e-16;
     bool use_prior_on_mixture = true; // MATLAB: example.m:39 % detector constructor
     bool use_uniform_component = true; // MATLAB: example.m:39 % detector constructor
     Colorspace colorSpace = YCRCB; // MATLAB: example.m:39 % detector constructor
@@ -199,7 +200,7 @@ int main (int argc, char ** argv){
         }
 
         cv::Mat Q_sum_large, mix_PI_i;
-        std::cout << "colorSpace: " << colorSpace << std::endl
+        std::cout << "colorSpace: " << colorSpace << std::endl // TODO: samo za debugiranje
                   << "em_image size: " << em_image_size << std::endl
                   << "use_uniform_component: " << use_uniform_component << std::endl
                   << "type_of_em: " << type_of_em << std::endl
@@ -213,21 +214,28 @@ int main (int argc, char ** argv){
                   << "current_mix_Cov[0]: " << current_mix_Cov[0] << std::endl
                   << "current_mix_Cov[1]: " << current_mix_Cov[1] << std::endl
                   << "current_mix_Cov[2]: " << current_mix_Cov[2] << std::endl
-                << "prior_mix_W[0]: " << prior_mix_W[0] << std::endl
-                << "prior_mix_W[1]: " << prior_mix_W[1] << std::endl
-                << "prior_mix_W[2]: " << prior_mix_W[2] << std::endl
-                << "prior_mix_Mu[0]: " << prior_mix_Mu[0] << std::endl
-                << "prior_mix_Mu[1]: " << prior_mix_Mu[1] << std::endl
-                << "prior_mix_Mu[2]: " << prior_mix_Mu[2] << std::endl
-                << "prior_mix_Cov[0]: " << prior_mix_Cov[0] << std::endl
-                << "prior_mix_Cov[1]: " << prior_mix_Cov[1] << std::endl
-                << "prior_mix_Cov[2]: " << prior_mix_Cov[2] << std::endl
-                << "prior_mix_Prec[0]: " << prior_mix_Prec[0] << std::endl
-                << "prior_mix_Prec[1]: " << prior_mix_Prec[1] << std::endl
-                << "prior_mix_Prec[2]: " << prior_mix_Prec[2] << std::endl;
-        run_SSM(colorSpace, em_image_size, use_uniform_component, type_of_em,
+                  << "prior_mix_W[0]: " << prior_mix_W[0] << std::endl
+                  << "prior_mix_W[1]: " << prior_mix_W[1] << std::endl
+                  << "prior_mix_W[2]: " << prior_mix_W[2] << std::endl
+                  << "prior_mix_Mu[0]: " << prior_mix_Mu[0] << std::endl
+                  << "prior_mix_Mu[1]: " << prior_mix_Mu[1] << std::endl
+                  << "prior_mix_Mu[2]: " << prior_mix_Mu[2] << std::endl
+                  << "prior_mix_Cov[0]: " << prior_mix_Cov[0] << std::endl
+                  << "prior_mix_Cov[1]: " << prior_mix_Cov[1] << std::endl
+                  << "prior_mix_Cov[2]: " << prior_mix_Cov[2] << std::endl
+                  << "prior_mix_Prec[0]: " << prior_mix_Prec[0] << std::endl
+                  << "prior_mix_Prec[1]: " << prior_mix_Prec[1] << std::endl
+                  << "prior_mix_Prec[2]: " << prior_mix_Prec[2] << std::endl;
+        run_SSM(colorSpace, em_image_size, use_uniform_component, type_of_em, // TODO: samo za debugiranje
                 maxEMsteps, current_mix_W, PI_i, dataEM, current_mix_Mu, current_mix_Cov, prior_mix_Mu,
-                prior_mix_Prec, use_prior_on_mixture, 2 ^ -52, Q_sum_large, mix_PI_i);
+                prior_mix_Prec, use_prior_on_mixture, eps, Q_sum_large, mix_PI_i);
+
+        std::vector <cv::Mat>PI_i_channels;
+        cv::split(mix_PI_i, PI_i_channels);
+        std::cout << "PI_i(:,:,1)=" << PI_i_channels[0] << std::endl; // TODO: samo za debugiranje
+        std::cout << "PI_i(:,:,2)=" << PI_i_channels[1] << std::endl; // TODO: samo za debugiranje
+        std::cout << "PI_i(:,:,3)=" << PI_i_channels[2] << std::endl; // TODO: samo za debugiranje
+        std::cout << "PI_i(:,:,4)=" << PI_i_channels[3] << std::endl; // TODO: samo za debugiranje
         std::cout << "Frame " << frame_number << " done" << std::endl;
     }
     return 0;
