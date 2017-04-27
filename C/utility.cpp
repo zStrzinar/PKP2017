@@ -116,7 +116,6 @@ cv::Mat Bsxfun(cv::Mat inputMat, cv::Mat bsxParam, BsxFunOp op=DIVIDE){
                 cv::multiply(result.col(i), bsxParam, result.col(i));
             }
             break;
-
         default:
             break;
     }

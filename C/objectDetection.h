@@ -13,4 +13,8 @@
 
 void getEdgeAndObjectNoScaling(const cv::Mat &P_edge, const cv::Size Im_size);
 
+void keepLargestBlob(const cv::Mat &src, cv::Mat &dst);
+
+void extractTheLargestCurve(cv::Mat &dT, std::vector<cv::Point> &points);
+
 #endif //PKP2017_OBJECTDETECTION_H
