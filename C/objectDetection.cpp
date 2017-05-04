@@ -29,7 +29,6 @@ void getEdgeAndObjectNoScaling(const cv::Mat &P_edge, const cv::Size Im_size){
 
     cv::Mat T,T_largest(T_max.rows,T_max.cols,CV_8UC1,Scalar::all(0));
     cv::compare(T_max,P_edge_ch[2], T, cv::CMP_EQ);
-    // std::cout << T << std::endl; // TODO: samo za debug!
 
     imshow("prej", T);
     // poskrbi za 8 connectivity:
@@ -41,32 +40,22 @@ void getEdgeAndObjectNoScaling(const cv::Mat &P_edge, const cv::Size Im_size){
     T_largest=T_largest.t();
     imshow( "largest Contour", T_largest );
 
-//    cv::Mat temp = (Mat_<int>(3,3) << 1,2,3,4,5,6,7,8,9);// TODO: samo za debug!
-//    T = temp.clone();
-//    cout << "T = " << endl << " " << T << endl << endl;// TODO: samo za debug!
-
     cv::Mat T_transposed, T_diff,Tt_diff, firstCol, dT;
     cv::Mat dT2_diff, firstRow,dT2;
     T_diff = T.rowRange(1,T.rows)-T.rowRange(0,T.rows-1); // nadomestek diff(T)
-//    cout << "diff(T) = " << endl << " " << T_diff << endl << endl;// TODO: samo za debug!
     T_transposed = T.t(); // nadomestek T'
-//    cout << "T' = " << endl << " " << T_transposed << endl << endl;// TODO: samo za debug!
     Tt_diff = T_transposed.rowRange(1,T_transposed.rows)-T_transposed.rowRange(0,T_transposed.rows-1); // nadomestek diff(T')
     Tt_diff = Tt_diff.t(); // nadomestek diff(T')'
-//    cout << "diff(T') = " << endl << " " << Tt_diff << endl << endl;// TODO: samo za debug!
 
     firstCol = Mat::zeros(Tt_diff.rows,1,Tt_diff.type());
     hconcat(firstCol,Tt_diff,dT);
     cv::compare(dT, Mat::zeros(dT.rows,dT.cols,dT.type()),dT,CMP_NE);
-//    cout << "dT = " << endl << " " << dT << endl << endl;// TODO: samo za debug!
 
     firstRow = Mat::zeros(1,T_diff.cols,T_diff.type());
     vconcat(firstRow, T_diff, dT2);
     cv::compare(dT2, Mat::zeros(dT2.rows, dT2.cols, dT2.type()), dT2, CMP_NE);
-//    cout << "dT2 = " << endl << " " << dT2 << endl << endl;// TODO: samo za debug!
 
     dT = dT | dT2;
-//    cout << "dT = " << endl << " " << dT << endl << endl;// TODO: samo za debug!
     cv::Mat Data;
     if ((cv::countNonZero(T) != (T.rows*T.cols)) && (cv::countNonZero(dT)!=0)){
         std::vector<Point> contour;
@@ -78,7 +67,6 @@ void getEdgeAndObjectNoScaling(const cv::Mat &P_edge, const cv::Size Im_size){
             cv::Mat(contour[i], false).convertTo(V,CV_32F);
             Data.col(i) = Tt*V-Tt*Mat::ones(2,1,CV_32F)/2;
         }
-        std::cout << "here!" << std::endl;
     }
     else{
         std::cerr << "Not supported!" << std::endl;

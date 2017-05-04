@@ -13,8 +13,6 @@
 enum Colorspace { HSV, RGB, YCRCB, LAB, YCRS, NONE };
 enum BsxFunOp { DIVIDE, TIMES };
 
-void printHelp();
-void loadPriorModelFromDisk(Colorspace colorSpace, std::vector<cv::Mat> &mix_Mu, std::vector<cv::Mat> &mix_Cov, std::vector<cv::Mat> &mix_w, std::vector<cv::Mat> &static_prec);
 cv::Mat Bsxfun(cv::Mat inputMat, cv::Mat bsxParam, BsxFunOp op);
 void run_SSM(Colorspace colorSpace,
              cv::Size sizeMask,
