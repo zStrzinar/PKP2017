@@ -11,7 +11,7 @@
 #include <iostream>
 
 enum Colorspace { HSV, RGB, YCRCB, LAB, YCRS, NONE };
-enum BsxFunOp { DIVIDE, TIMES };
+enum BsxFunOp { DIVIDE, TIMES, MINUS, PLUS };
 
 cv::Mat Bsxfun(cv::Mat inputMat, cv::Mat bsxParam, BsxFunOp op);
 void run_SSM(Colorspace colorSpace,

@@ -177,7 +177,7 @@ int main (int argc, char ** argv){
                 for (k=0; k<3; k++){ // cez vse regije
                     current_region = dataEM.colRange((int)vertical_ratio[2*k], (int)vertical_ratio[2*k+1]); // 2*k je zato ker tukaj je vertical_ratio kombinacija: [zacetek,konec,zacetek,konec,zacetek,konec]
                     // TODO: ali je tukaj (eno vrstico gor) pravilen range? vključenost prvega in zadnjega stolpca v primerjavi z Matlabom?
-                    cv::calcCovarMatrix(current_region, current_Cov[k], current_Mu[k], CV_COVAR_NORMAL|CV_COVAR_COLS); // Kovariančna matrika in srednja vrednost
+                    cv::calcCovarMatrix(current_region, current_Cov[k], current_Mu[k], CV_COVAR_NORMAL|CV_COVAR_COLS, current_region.type()); // Kovariančna matrika in srednja vrednost
 
                     momentMatchPdf(current_mix_Mu[k], current_Mu[k], current_mix_Cov[k], current_Cov[k], w_mix, current_mix_Mu[k], current_mix_Cov[k], current_mix_W[k]);
                 }

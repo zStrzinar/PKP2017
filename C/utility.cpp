@@ -34,6 +34,20 @@ cv::Mat Bsxfun(cv::Mat inputMat, cv::Mat bsxParam, BsxFunOp op=DIVIDE){
                 cv::multiply(result.col(i), bsxParam, result.col(i));
             }
             break;
+
+        case MINUS:
+            for (int i = 0; i < result.cols; i++)
+            {
+                result.col(i) -=bsxParam;
+            }
+            break;
+
+        case PLUS:
+            for (int i = 0; i < result.cols; i++)
+            {
+                result.col(i) +=bsxParam;
+            }
+            break;
         default:
             break;
     }

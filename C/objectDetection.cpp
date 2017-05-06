@@ -3,6 +3,7 @@
 //
 
 #include "objectDetection.h"
+#include "utility.h"
 
 using namespace cv;
 using namespace std;
@@ -68,10 +69,21 @@ void getEdgeAndObjectNoScaling(const cv::Mat &P_edge, const cv::Size Im_size){
             Data.col(i) = Tt*V-Tt*Mat::ones(2,1,CV_32F)/2;
         }
     }
-    else{
-        std::cerr << "Not supported!" << std::endl;
+    else {
+        // V matlabu na tem mestu ustvarijo prazen objekt objects
+        // TODO: sem se vrni ko boš vedel kako imaš shranjene objekte
     }
-    std::cout << Data << std::endl;
+
+    std::cout << "dT: " << dT << std::endl;
+    std::cout << "Data: " << Data << std::endl;
+
+    //  Edge of sea
+    float delta;
+    delta = P_edge.rows*(float)0.3;
+
+    getOptimalLineImage_constrained(Data, delta);
+
+    imshow("dT", dT); waitKey();
 
 }
 
@@ -119,4 +131,63 @@ void extractTheLargestCurve(cv::Mat &dT, std::vector<cv::Point> &points){
     cv::Mat img(50,50,CV_64F,0.0);
     drawContours( img, contours,longest_contour_index, color, 1, 8, hierarchy ); // Draw the largest contour using previously stored index.
     imshow("testno okno", img.t());
+}
+
+void getOptimalLineImage_constrained(cv::Mat LineXY, float delta){
+    cv::Mat a;
+    a = cv::Mat(3,1,CV_32F);
+
+    cv::Mat covarMat, meanMat, LineXY_t;
+    cv::calcCovarMatrix(LineXY,covarMat, meanMat, CV_COVAR_NORMAL|CV_COVAR_COLS|COVAR_SCALE, CV_32F);
+    covarMat = covarMat*LineXY.cols/(LineXY.cols-1);
+    cv::Mat S,U,V;
+    cv::SVD::compute(covarMat, S,U,V);
+    U.col(1).copyTo(a.rowRange(0,2));
+    cv::Mat temp(1,1,CV_32F);
+    temp = -a.rowRange(0,2).t()*meanMat;
+    temp.copyTo(a.row(2));
+
+    double minVal = 1e-10; cv::Mat val;
+    cv::Mat a0 = a;
+    cv::Mat rr, zerovls;
+    cv::Mat w(1,LineXY.cols, CV_32F), w_sqrt;
+    float sum_w = 0;
+    cv::Mat xyw(LineXY.rows, LineXY.cols,CV_32F), mnxy, sub, wd;
+    cv::Mat C, diff;
+
+    int iter,i;
+    for (iter=0; iter<5; iter++){
+        rr = abs(a.at<float>(0)*LineXY.row(0) + a.at<float>(1)*LineXY.row(1) + a.at<float>(2))/delta;
+        zerovls = rr>2;
+        for (i=0; i<w.cols; i++){
+            if(zerovls.at<float>(i)==0) {
+                w.at<float>(i) = exp(-(float) 0.5 * rr.at<float>(i) * rr.at<float>(i));
+                sum_w += w.at<float>(i);
+            }
+            else
+                w.at<float>(i) = 0;
+        }
+        for (i=0; i<w.cols; i++){
+            w.at<float>(i)/=sum_w;
+        }
+
+        xyw = Bsxfun(LineXY,w,TIMES);
+        cv::reduce(xyw,mnxy,1, CV_REDUCE_SUM);
+
+        sub = Bsxfun(LineXY,mnxy,MINUS);
+        cv::sqrt(w,w_sqrt);
+        wd = Bsxfun(sub,w_sqrt,TIMES);
+
+        C = wd*wd.t();
+        cv::SVD::compute(C, S,U,V);
+        U.col(1).copyTo(a.rowRange(0,2));
+        temp = -a.rowRange(0,2).t()*mnxy;
+        temp.copyTo(a.row(2));
+
+        diff = abs(a0-a);
+        cv::reduce(diff,val,0,CV_REDUCE_AVG,CV_32F);
+        if(val.at<float>(0)<minVal) break;
+        a0 = a.clone();
+    }
+    waitKey();
 }
