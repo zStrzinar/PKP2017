@@ -34,18 +34,51 @@ cv::Mat Bsxfun(cv::Mat inputMat, cv::Mat bsxParam, BsxFunOp op=DIVIDE){
                 cv::multiply(result.col(i), bsxParam, result.col(i));
             }
             break;
+        default:
+            break;
+    }
+
+    result = result.reshape(channels, rows);
+    return result;
+}
+cv::Mat columnOperations(cv::Mat inputMat, cv::Mat param, BsxFunOp op){
+    int rows = inputMat.rows;
+    int cols = inputMat.cols;
+    int channels = inputMat.channels();
+
+    //param = param.reshape(1, param.rows*param.cols);
+    cv::Mat result = inputMat.clone();
+
+    assert(inputMat.rows == param.rows);
+
+    switch (op)
+    {
+        case DIVIDE:
+            for (int i = 0; i < result.cols; i++)
+            {
+                //result.col(i) = result.col(i).mul(param);
+                cv::divide(result.col(i), param, result.col(i));
+            }
+            break;
+
+        case TIMES:
+            for (int i = 0; i < result.cols; i++)
+            {
+                cv::multiply(result.col(i), param, result.col(i));
+            }
+            break;
 
         case MINUS:
             for (int i = 0; i < result.cols; i++)
             {
-                result.col(i) -=bsxParam;
+                result.col(i) -=param;
             }
             break;
 
         case PLUS:
             for (int i = 0; i < result.cols; i++)
             {
-                result.col(i) +=bsxParam;
+                result.col(i) +=param;
             }
             break;
         default:

@@ -152,7 +152,7 @@ void getOptimalLineImage_constrained(cv::Mat LineXY, float delta){
     cv::Mat rr, zerovls;
     cv::Mat w(1,LineXY.cols, CV_32F), w_sqrt;
     float sum_w = 0;
-    cv::Mat xyw(LineXY.rows, LineXY.cols,CV_32F), mnxy, sub, wd;
+    cv::Mat xyw, mnxy, sub, wd;
     cv::Mat C, diff;
 
     int iter,i;
@@ -171,12 +171,17 @@ void getOptimalLineImage_constrained(cv::Mat LineXY, float delta){
             w.at<float>(i)/=sum_w;
         }
 
-        xyw = Bsxfun(LineXY,w,TIMES);
+        std::cout << LineXY << std::endl << w << std::endl;
+        cv::Mat w_t; w_t = w.t(); LineXY_t = LineXY.t();
+        xyw = columnOperations(LineXY_t,w_t,TIMES); xyw=xyw.t();
         cv::reduce(xyw,mnxy,1, CV_REDUCE_SUM);
 
-        sub = Bsxfun(LineXY,mnxy,MINUS);
+        sub = columnOperations(LineXY,mnxy,MINUS);
         cv::sqrt(w,w_sqrt);
-        wd = Bsxfun(sub,w_sqrt,TIMES);
+        std::cout << "Cols: " << sub.cols << " rows: " << sub.rows << std::endl;
+        std::cout << "Cols: " << w_sqrt.cols << " rows: " << w_sqrt.rows << std::endl;
+        cv::Mat sub_t, w_sqrt_t; sub_t = sub.t(); w_sqrt_t = w_sqrt.t();
+        wd = columnOperations(sub_t,w_sqrt_t,TIMES); wd=wd.t();
 
         C = wd*wd.t();
         cv::SVD::compute(C, S,U,V);

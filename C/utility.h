@@ -14,6 +14,7 @@ enum Colorspace { HSV, RGB, YCRCB, LAB, YCRS, NONE };
 enum BsxFunOp { DIVIDE, TIMES, MINUS, PLUS };
 
 cv::Mat Bsxfun(cv::Mat inputMat, cv::Mat bsxParam, BsxFunOp op);
+cv::Mat columnOperations(cv::Mat inputMat, cv::Mat param, BsxFunOp op);
 void run_SSM(Colorspace colorSpace,
              cv::Size sizeMask,
              bool use_uniform_component,
