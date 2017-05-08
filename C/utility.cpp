@@ -88,6 +88,15 @@ cv::Mat columnOperations(cv::Mat inputMat, cv::Mat param, BsxFunOp op){
     result = result.reshape(channels, rows);
     return result;
 }
+
+cv::Mat rowOperations(cv::Mat inputMat, cv::Mat param, BsxFunOp op){
+    cv::Mat input_transposed, output_transposed, output, param_transposed;
+    input_transposed=inputMat.t(); param_transposed=param.t();
+    output_transposed = columnOperations(input_transposed, param_transposed, op);
+    output = output_transposed.t();
+    return output;
+}
+
 void run_SSM(Colorspace colorSpace,
              cv::Size sizeMask,
              bool use_uniform_component,

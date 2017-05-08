@@ -16,8 +16,9 @@ void printHelp();
 void loadPriorModelFromDisk(Colorspace colorSpace, std::vector<cv::Mat> &mix_Mu, std::vector<cv::Mat> &mix_Cov, std::vector<cv::Mat> &mix_w, std::vector<cv::Mat> &static_prec);
 void getSpacialData(cv::Size em_image_size, cv::Mat& spatial_data);
 void momentMatchPdf(cv::Mat previous_Mu, cv::Mat current_Mu, cv::Mat previous_Cov, cv::Mat current_Cov, std::vector<float> current_w, cv::Mat& new_Mu, cv::Mat& new_Cov, cv::Mat& new_w);
-
+void testiranje();
 int main (int argc, char ** argv){
+    //testiranje();
     // -------------------------- Obdelava vhodnih argumentov ----------------------------------------------------------
     // Najprej samo obdelava vhodnih argumentov
     //  cilj obdelave je, da imamo na koncu inputPath, outputPath, inputFormat in outputFormat
@@ -342,4 +343,12 @@ void momentMatchPdf(cv::Mat previous_Mu, cv::Mat current_Mu, cv::Mat previous_Co
     new_Cov = current_w[0]*temporary1 + current_w[1]*temporary2-new_mu*new_mu.t();
 
     new_w = cv::Mat(1,1,CV_64F,sum_w);
+}
+
+void testiranje(){
+    cv::Mat A = (Mat_<double>(2,20) << 1.0,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0);
+    //Mat C = (Mat_<double>(3,3) << 0, -1, 0, -1, 5, -1, 0, -1, 0)
+    std::cout << "A = " << A << std::endl;
+    getOptimalLineImage_constrained(A, (float)0.1);
+    while(1);
 }

@@ -4,6 +4,7 @@
 
 #include "objectDetection.h"
 #include "utility.h"
+#include "zStrzinar.h"
 
 using namespace cv;
 using namespace std;
@@ -134,65 +135,99 @@ void extractTheLargestCurve(cv::Mat &dT, std::vector<cv::Point> &points){
 }
 
 void getOptimalLineImage_constrained(cv::Mat LineXY, float delta){
+    std::cout << "xy = " << LineXY << std::endl << "; ptsinit = xy;" << std::endl;
+    std::cout << "delta = " << delta << std::endl;
     cv::Mat a;
     a = cv::Mat(3,1,CV_32F);
 
+    // Izracunamo kovariancno matriko in jo ustrezno skaliramo (razlika med matlab in openCV!)
     cv::Mat covarMat, meanMat, LineXY_t;
-    cv::calcCovarMatrix(LineXY,covarMat, meanMat, CV_COVAR_NORMAL|CV_COVAR_COLS|COVAR_SCALE, CV_32F);
+    cv::calcCovarMatrix(LineXY,covarMat, meanMat, CV_COVAR_NORMAL|CV_COVAR_COLS|CV_COVAR_SCALE, CV_32F);
     covarMat = covarMat*LineXY.cols/(LineXY.cols-1);
+
+
+    // Izvedemo SVD
     cv::Mat S,U,V;
     cv::SVD::compute(covarMat, S,U,V);
+
+    // Prva dva elementa a-ja naj bosta kar drugi stolpec U-ja
     U.col(1).copyTo(a.rowRange(0,2));
+    // Tretji element a-ja je: -U(:,2)*meanMat
     cv::Mat temp(1,1,CV_32F);
     temp = -a.rowRange(0,2).t()*meanMat;
     temp.copyTo(a.row(2));
 
-    double minVal = 1e-10; cv::Mat val;
-    cv::Mat a0 = a;
-    cv::Mat rr, zerovls;
-    cv::Mat w(1,LineXY.cols, CV_32F), w_sqrt;
+    double minVal = 1e-10; cv::Mat val; // vrednost pri kateri naj se for zanka ustavi
+    cv::Mat a0 = a.clone(); // da bomo lahko spremljali spremembe
+    cv::Mat rr, zerovls, w(1,LineXY.cols, CV_32F), w_sqrt;
     float sum_w = 0;
     cv::Mat xyw, mnxy, sub, wd;
     cv::Mat C, diff;
 
-    int iter,i;
+    int iter,i; // iter je samo za for-zanko, i je za vse notranje for-zanke
     for (iter=0; iter<5; iter++){
         rr = abs(a.at<float>(0)*LineXY.row(0) + a.at<float>(1)*LineXY.row(1) + a.at<float>(2))/delta;
-        zerovls = rr>2;
+        cv::compare(rr,2,zerovls,CMP_GT);
+
+        // na mesta kjer je rr<=2 v w vpišemo nek eksponenten člen
+        // sproti seštevamo w
+        // kjer rr>2 vpišemo 0
         for (i=0; i<w.cols; i++){
-            if(zerovls.at<float>(i)==0) {
+            if(zerovls.at<char>(i)==0) {
                 w.at<float>(i) = exp(-(float) 0.5 * rr.at<float>(i) * rr.at<float>(i));
                 sum_w += w.at<float>(i);
             }
             else
                 w.at<float>(i) = 0;
         }
+
+        // Normiramo w (vsota elementov je 1)
         for (i=0; i<w.cols; i++){
             w.at<float>(i)/=sum_w;
         }
 
-        std::cout << LineXY << std::endl << w << std::endl;
-        cv::Mat w_t; w_t = w.t(); LineXY_t = LineXY.t();
-        xyw = columnOperations(LineXY_t,w_t,TIMES); xyw=xyw.t();
-        cv::reduce(xyw,mnxy,1, CV_REDUCE_SUM);
+        // obe vrstici v LineXY pomnožimo z w (vrstični vektor)
+            //cv::Mat w_t; w_t = w.t(); LineXY_t = LineXY.t();
+            //xyw = columnOperations(LineXY_t,w_t,TIMES); xyw=xyw.t();
+        xyw = rowOperations(LineXY,w,TIMES);
+        // potem pa naredimo vsoto skozi stolpce (rezultat je en stolpec)
+        cv::reduce(xyw,mnxy,REDUCE_TO_COL, CV_REDUCE_SUM);
 
+        printMat("mnxy = ", mnxy); // TODO: brisi!
+
+        // obema vrsticama v LineXY odštejemo dobljen seštevek (zgoraj)
+        // korenimo
         sub = columnOperations(LineXY,mnxy,MINUS);
+        printMat("sub = ", sub); // TODO: brisi!
         cv::sqrt(w,w_sqrt);
-        std::cout << "Cols: " << sub.cols << " rows: " << sub.rows << std::endl;
-        std::cout << "Cols: " << w_sqrt.cols << " rows: " << w_sqrt.rows << std::endl;
-        cv::Mat sub_t, w_sqrt_t; sub_t = sub.t(); w_sqrt_t = w_sqrt.t();
-        wd = columnOperations(sub_t,w_sqrt_t,TIMES); wd=wd.t();
+            // cv::Mat sub_t, w_sqrt_t; sub_t = sub.t(); w_sqrt_t = w_sqrt.t();
+            // wd = columnOperations(sub_t,w_sqrt_t,TIMES); wd=wd.t();
+        // odštete vrednosti po vrsticah pomnožimo s koreni
+        wd = rowOperations(sub,w_sqrt,TIMES);
 
+        printMat("wd = ", wd); // TODO: brisi!
+
+        // Še enkrat SVD
         C = wd*wd.t();
+        printMat("C = ", C); // TODO: brisi!
         cv::SVD::compute(C, S,U,V);
+        printMat("U = ", U); // TODO: brisi!
+        // a je spet določen tako kot prej
         U.col(1).copyTo(a.rowRange(0,2));
         temp = -a.rowRange(0,2).t()*mnxy;
         temp.copyTo(a.row(2));
+        printMat("a = ", a); // TODO: brisi!
 
+        // kakšna je sprememba a-ja v tej iteraciji?
         diff = abs(a0-a);
+        printMat("diff = ", diff); // TODO: brisi!
         cv::reduce(diff,val,0,CV_REDUCE_AVG,CV_32F);
+        // če je premajhna break
+        printMat("val = ", val); // TODO: brisi!
         if(val.at<float>(0)<minVal) break;
+        // naslednjič primerjamo z novim a-jem
         a0 = a.clone();
     }
+    std::cout << "a = " << a << std::endl;
     waitKey();
 }
