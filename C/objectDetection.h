@@ -17,6 +17,6 @@ void keepLargestBlob(const cv::Mat &src, cv::Mat &dst);
 
 void extractTheLargestCurve(cv::Mat &dT, std::vector<cv::Point> &points);
 
-void getOptimalLineImage_constrained(cv::Mat LineXY, float delta);
+cv::Mat getOptimalLineImage_constrained(cv::Mat LineXY, float delta);
 
 #endif //PKP2017_OBJECTDETECTION_H

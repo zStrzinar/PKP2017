@@ -82,7 +82,8 @@ void getEdgeAndObjectNoScaling(const cv::Mat &P_edge, const cv::Size Im_size){
     float delta;
     delta = P_edge.rows*(float)0.3;
 
-    getOptimalLineImage_constrained(Data, delta);
+    cv::Mat a;
+    a = getOptimalLineImage_constrained(Data, delta);
 
     imshow("dT", dT); waitKey();
 
@@ -134,7 +135,7 @@ void extractTheLargestCurve(cv::Mat &dT, std::vector<cv::Point> &points){
     imshow("testno okno", img.t());
 }
 
-void getOptimalLineImage_constrained(cv::Mat LineXY, float delta){
+cv::Mat getOptimalLineImage_constrained(cv::Mat LineXY, float delta){
     std::cout << "xy = " << LineXY << std::endl << "; ptsinit = xy;" << std::endl;
     std::cout << "delta = " << delta << std::endl;
     cv::Mat a;
@@ -160,7 +161,7 @@ void getOptimalLineImage_constrained(cv::Mat LineXY, float delta){
     double minVal = 1e-10; cv::Mat val; // vrednost pri kateri naj se for zanka ustavi
     cv::Mat a0 = a.clone(); // da bomo lahko spremljali spremembe
     cv::Mat rr, zerovls, w(1,LineXY.cols, CV_32F), w_sqrt;
-    float sum_w = 0;
+    float sum_w;
     cv::Mat xyw, mnxy, sub, wd;
     cv::Mat C, diff;
 
@@ -172,6 +173,7 @@ void getOptimalLineImage_constrained(cv::Mat LineXY, float delta){
         // na mesta kjer je rr<=2 v w vpišemo nek eksponenten člen
         // sproti seštevamo w
         // kjer rr>2 vpišemo 0
+        sum_w = 0;
         for (i=0; i<w.cols; i++){
             if(zerovls.at<char>(i)==0) {
                 w.at<float>(i) = exp(-(float) 0.5 * rr.at<float>(i) * rr.at<float>(i));
@@ -180,7 +182,6 @@ void getOptimalLineImage_constrained(cv::Mat LineXY, float delta){
             else
                 w.at<float>(i) = 0;
         }
-
         // Normiramo w (vsota elementov je 1)
         for (i=0; i<w.cols; i++){
             w.at<float>(i)/=sum_w;
@@ -190,44 +191,39 @@ void getOptimalLineImage_constrained(cv::Mat LineXY, float delta){
             //cv::Mat w_t; w_t = w.t(); LineXY_t = LineXY.t();
             //xyw = columnOperations(LineXY_t,w_t,TIMES); xyw=xyw.t();
         xyw = rowOperations(LineXY,w,TIMES);
+
         // potem pa naredimo vsoto skozi stolpce (rezultat je en stolpec)
         cv::reduce(xyw,mnxy,REDUCE_TO_COL, CV_REDUCE_SUM);
-
-        printMat("mnxy = ", mnxy); // TODO: brisi!
 
         // obema vrsticama v LineXY odštejemo dobljen seštevek (zgoraj)
         // korenimo
         sub = columnOperations(LineXY,mnxy,MINUS);
-        printMat("sub = ", sub); // TODO: brisi!
         cv::sqrt(w,w_sqrt);
             // cv::Mat sub_t, w_sqrt_t; sub_t = sub.t(); w_sqrt_t = w_sqrt.t();
             // wd = columnOperations(sub_t,w_sqrt_t,TIMES); wd=wd.t();
         // odštete vrednosti po vrsticah pomnožimo s koreni
         wd = rowOperations(sub,w_sqrt,TIMES);
 
-        printMat("wd = ", wd); // TODO: brisi!
-
         // Še enkrat SVD
         C = wd*wd.t();
-        printMat("C = ", C); // TODO: brisi!
         cv::SVD::compute(C, S,U,V);
-        printMat("U = ", U); // TODO: brisi!
+        cv::Mat minusU;
+        minusU = U.col(1)*(-1);
+        minusU.copyTo(U.col(1));
+
         // a je spet določen tako kot prej
         U.col(1).copyTo(a.rowRange(0,2));
         temp = -a.rowRange(0,2).t()*mnxy;
         temp.copyTo(a.row(2));
-        printMat("a = ", a); // TODO: brisi!
 
         // kakšna je sprememba a-ja v tej iteraciji?
         diff = abs(a0-a);
-        printMat("diff = ", diff); // TODO: brisi!
         cv::reduce(diff,val,0,CV_REDUCE_AVG,CV_32F);
         // če je premajhna break
-        printMat("val = ", val); // TODO: brisi!
         if(val.at<float>(0)<minVal) break;
         // naslednjič primerjamo z novim a-jem
         a0 = a.clone();
     }
-    std::cout << "a = " << a << std::endl;
-    waitKey();
+
+    return a;
 }
