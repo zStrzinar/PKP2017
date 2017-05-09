@@ -4,6 +4,8 @@
 
 #include "objectDetection.h"
 #include "utility.h"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
 #include "zStrzinar.h"
 
 using namespace cv;
@@ -82,11 +84,101 @@ void getEdgeAndObjectNoScaling(const cv::Mat &P_edge, const cv::Size Im_size){
     float delta;
     delta = P_edge.rows*(float)0.3;
 
-    cv::Mat a;
+    std::vector <float> a;
     a = getOptimalLineImage_constrained(Data, delta);
+    cv::Mat xy_subset = Data.clone();
 
-    imshow("dT", dT); waitKey();
+    float x0,y0,x1,y1;
+    x0 = 0; // x0
+    y0 = -(a[0]*x0 + a[2])/a[1];
+    x1 = Im_size.width;
+    y1 = -(a[0]*x1 + a[3])/a[1];
+    std::vector <float> pts;
+    pts.push_back(x0);
+    pts.push_back(y0);
+    pts.push_back(x1);
+    pts.push_back(y1);
 
+    // I=~T'
+    cv::Mat I;
+    I = cv::Mat::ones(T.cols,T.rows,CV_8U)-T.t(); // v ones() sem zamenjal cols in rows, ker je potem T transponiran!
+
+    std::vector <cv::Mat> CC;
+    CC = extractBlobs(I); // v CC so blobi vsak svoja matrika
+
+    // iz blobov dobimo bounding boxe v originalnem (večjem kot 50x50) frame
+    int i;
+    std::vector<std::vector <int> > boundingBoxes; std::vector<float> areas;
+    for (i=0; i<CC.size(); i++){
+        // find bounding box in 50x50 image
+        int col, row;
+        int col_min = -1, col_max=-1, row_min=-1, row_max=-1;
+        cv::Mat colsSum, rowsSum;
+        cv::reduce(CC[i],colsSum, REDUCE_TO_ROW, CV_REDUCE_SUM);
+        cv::reduce(CC[i],rowsSum, REDUCE_TO_COL, CV_REDUCE_SUM);
+        for (col = 0; col<colsSum.cols; col++){ // TODO: lahko to nadomestiš z minMaxLoc?
+            if(colsSum.at<char>(col)!=0){
+                if(col_min ==-1) {
+                    col_min = col;
+                }
+                col_max = col;
+            }
+        }
+        for (row = 0; row<rowsSum.rows; row++){ // TODO: lahko to nadomestiš z minMaxLoc?
+            if(rowsSum.at<char>(row)!=0){
+                if(row_min ==-1) {
+                    row_min = row;
+                }
+                row_max = row;
+            }
+        }
+
+        row_min-=1; col_min -=1;
+        int height, width;
+        height = col_max-col_min; // X je višina
+        width = row_max-row_min; // Y je širina
+
+        // rescale bounding box with values from Tt
+        row_min*=Tt.at<float>(0,0);
+        col_min*=Tt.at<float>(1,1);
+        width*=Tt.at<float>(0,0);
+        height*=Tt.at<float>(1,1);
+
+        std::vector <int> boundingBox;
+        boundingBox.push_back(row_min);
+        boundingBox.push_back(col_min);
+        boundingBox.push_back(width);
+        boundingBox.push_back(height);
+
+        float area = width*height;
+
+        // Boundary
+        // Poiščemo piksel ki ima po y najmanjšo koordinato. (Poiščemo x in y koordinati v 50x50)
+        // Transformiamo v 860x640
+        col_min/=Tt.at<float>(0,0);
+        for (row=0; row<CC[i].rows; row++){
+            if(CC[i].at<char>(col_min, row)){ // TODO: nisem prepričan glede zaporedja col,row ali pa row,col
+                row_min = row;
+            }
+        }
+        col_min*=Tt.at<float>(0,0);
+        row_min*=Tt.at<float>(1,1);
+
+        cv::Mat temp;
+        temp = abs(xy_subset.row(0)-col_min);
+        cv::Point loc;
+        cv::minMaxLoc(temp, NULL, NULL, &loc, NULL);
+        cv::Mat boundry;
+        boundry = xy_subset.col(loc.x);
+
+        if (boundry.at<float>(0,1)>row_min){ // TODO: tukaj spet preveri kaj pomenita 0,1 ??
+            continue;
+        }
+
+        boundingBoxes.push_back(boundingBox);
+        areas.push_back(area);
+    }
+    suppressDetections(boundingBoxes, areas);
 }
 
 void keepLargestBlob(const cv::Mat &src, cv::Mat &dst){
@@ -135,7 +227,7 @@ void extractTheLargestCurve(cv::Mat &dT, std::vector<cv::Point> &points){
     imshow("testno okno", img.t());
 }
 
-cv::Mat getOptimalLineImage_constrained(cv::Mat LineXY, float delta){
+std::vector <float> getOptimalLineImage_constrained(cv::Mat LineXY, float delta){
     std::cout << "xy = " << LineXY << std::endl << "; ptsinit = xy;" << std::endl;
     std::cout << "delta = " << delta << std::endl;
     cv::Mat a;
@@ -225,5 +317,33 @@ cv::Mat getOptimalLineImage_constrained(cv::Mat LineXY, float delta){
         a0 = a.clone();
     }
 
-    return a;
+    std::vector <float> out;
+    out.push_back(a.at<float>(0));
+    out.push_back(a.at<float>(1));
+    out.push_back(a.at<float>(2));
+    return out;
+}
+
+std::vector <cv::Mat> extractBlobs(cv::Mat bw){
+    std::vector <cv::Mat> out;
+
+    vector<vector<Point> > contours; // Vector for storing contours
+    vector<Vec4i> hierarchy;
+
+    cv::findContours( bw, contours, hierarchy,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE ); // Find the contours in the image
+
+    int idx = 0;
+    for( ; idx >= 0; idx = hierarchy[idx][0] )
+    {
+        cv::Mat currentBlob;
+        currentBlob = Mat::zeros(bw.rows,bw.cols,CV_8U);
+        Scalar color( 255, 255, 255 );
+        drawContours(currentBlob,contours,idx,color, CV_FILLED, 8, hierarchy);
+        out.push_back(currentBlob.clone());
+    }
+    return out;
+}
+
+void suppressDetections(std::vector<std::vector<int> >& boundingBoxes, std::vector<float> &areas){
+
 }
