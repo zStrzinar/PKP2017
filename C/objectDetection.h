@@ -11,11 +11,11 @@
 #include "opencv2/opencv.hpp"
 #include <iostream>
 
-void getEdgeAndObjectNoScaling(const cv::Mat &P_edge, const cv::Size Im_size);
+void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size original_frame_size);
 
 void keepLargestBlob(const cv::Mat &src, cv::Mat &dst);
 
-void extractTheLargestCurve(cv::Mat &dT, std::vector<cv::Point> &points);
+void extractTheLargestCurve(const cv::Mat &dT, std::vector<cv::Point> &points);
 
 std::vector <float> getOptimalLineImage_constrained(cv::Mat LineXY, float delta);
 

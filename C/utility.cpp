@@ -41,6 +41,7 @@ cv::Mat Bsxfun(cv::Mat inputMat, cv::Mat bsxParam, BsxFunOp op=DIVIDE){
     result = result.reshape(channels, rows);
     return result;
 }
+
 cv::Mat columnOperations(cv::Mat inputMat, cv::Mat param, BsxFunOp op){
     int rows = inputMat.rows;
     int cols = inputMat.cols;
@@ -352,6 +353,7 @@ void run_SSM(Colorspace colorSpace,
         std::cout << "exception caught: " << err_msg << std::endl;
     }
 }
+
 double prod(cv::Mat mat){
     double product = 1;
     for (int i = 0; i < mat.rows; i++)
@@ -363,6 +365,7 @@ double prod(cv::Mat mat){
     }
     return product;
 }
+
 Colorspace ResolveColorspace(std::string color){
 /**
 Resolves and returns enum for a given color space
@@ -384,6 +387,7 @@ Resolves and returns enum for a given color space
         return NONE;
     }
 }
+
 double GetUnknownWeightForTheFeatureModel(Colorspace type_colorspace,cv::Size sizeMask, bool use_uniform_component){
     double p_unknown = 0;
     if (!use_uniform_component){
@@ -410,6 +414,7 @@ double GetUnknownWeightForTheFeatureModel(Colorspace type_colorspace,cv::Size si
     }
     return p_unknown;
 }
+
 void  GetConvolutionKernel(std::string type_of_em, cv::Size sizeMask, cv::Mat& H_0, cv::Mat& H_1){
     /**
     Calculates gaussian kernels used in segmentation
@@ -441,6 +446,7 @@ void  GetConvolutionKernel(std::string type_of_em, cv::Size sizeMask, cv::Mat& H
         H_0 = H_0_vector.t()*H_0_vector;
     }
 }
+
 cv::Mat normpdf(cv::Mat x, cv::Mat mu, cv::Mat prec, cv::Mat sigma, double epsilon){
     cv::Mat A;
     cv::Mat repeatedX;
@@ -505,6 +511,7 @@ cv::Mat normpdf(cv::Mat x, cv::Mat mu, cv::Mat prec, cv::Mat sigma, double epsil
     A = A/scl;
     return A;
 }
+
 cv::Mat mergePd(cv::Mat mu_d, cv::Mat c_d, cv::Mat mu_0, cv::Mat c0,cv::Mat ic0) {
     if(ic0.empty())
     {

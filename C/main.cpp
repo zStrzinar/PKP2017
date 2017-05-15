@@ -140,7 +140,6 @@ int main (int argc, char ** argv){
         color_data.convertTo(color_data,CV_64F);
         cv::Mat dataEM;//(5,em_image_size[0]*em_image_size[1],CV_64F);
         cv::vconcat(spatial_data,color_data,dataEM); // Zlepim skupaj color_data in spatial_data
-        std::cout << std::endl << dataEM << std::endl;
         cv::Mat current_Mu[3], current_Cov[3], current_region;
 
         if (frame_number==1){
@@ -200,7 +199,8 @@ int main (int argc, char ** argv){
 
         std::vector <cv::Mat>PI_i_channels;
         cv::split(mix_PI_i, PI_i_channels);
-        getEdgeAndObjectNoScaling(Q_sum_large, original_size);
+        cv::Mat Q_sum_large_CV_8U; Q_sum_large.convertTo(Q_sum_large_CV_8U,CV_8UC4);
+        getEdgeAndObjectNoScaling(Q_sum_large_CV_8U, original_size);
         std::cout << "Frame " << frame_number << " done" << std::endl;
     }
     return 0;
