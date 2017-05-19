@@ -200,7 +200,8 @@ int main (int argc, char ** argv){
         std::vector <cv::Mat>PI_i_channels;
         cv::split(mix_PI_i, PI_i_channels);
         cv::Mat Q_sum_large_CV_8U; Q_sum_large.convertTo(Q_sum_large_CV_8U,CV_8UC4);
-        getEdgeAndObjectNoScaling(Q_sum_large_CV_8U, original_size);
+        std::vector <object> detectedObjects;
+        getEdgeAndObjectNoScaling(Q_sum_large_CV_8U, original_size, detectedObjects);
         std::cout << "Frame " << frame_number << " done" << std::endl;
     }
     return 0;

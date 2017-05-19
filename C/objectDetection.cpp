@@ -11,7 +11,7 @@
 using namespace cv;
 using namespace std;
 
-void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size original_frame_size){
+void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size original_frame_size, std::vector <object> &objects){
     // areas is 4-channel CV_8UC4 image. Each channel represents one area + 4th channel is ____
     // original_frame_size is original frame size
     if (areas.type()!=CV_8UC4){
@@ -122,7 +122,7 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size original_fra
 
     // iz blobov dobimo bounding boxe v originalnem (večjem kot 50x50) frame
     int i;
-    std::vector<std::vector <int> > boundingBoxes; std::vector<float> box_areas;
+//    std::vector<std::vector <int> > boundingBoxes; std::vector<float> box_areas;
     for (i=0; i<CC.size(); i++){
         // find bounding box in 50x50 image
         int col, row;
@@ -195,10 +195,16 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size original_fra
         }
 
         // objekt je prestal test, dodajmo ga v vektor
-        boundingBoxes.push_back(boundingBox);
-        box_areas.push_back(area);
+        object thisObject;
+        thisObject.bounding_box = boundingBox;
+        thisObject.area = area;
+
+        objects.push_back(thisObject);
     }
-    suppressDetections(boundingBoxes, box_areas);
+    std::vector<object> suppressedObjects;
+    suppressDetections(objects, suppressedObjects);
+
+    return;
 }
 
 void keepLargestBlob(const cv::Mat &src, cv::Mat &dst){
@@ -229,6 +235,7 @@ void keepLargestBlob(const cv::Mat &src, cv::Mat &dst){
     // mark the biggest blob in output image
     Scalar color( 255,255,255); // white color
     drawContours( dst, contours,largest_contour_index, color, CV_FILLED, 8, hierarchy ); // Draw the largest contour using previously stored index.
+    return;
 }
 
 void extractTheLargestCurve(const cv::Mat &src, std::vector<cv::Point> &points){
@@ -260,6 +267,7 @@ void extractTheLargestCurve(const cv::Mat &src, std::vector<cv::Point> &points){
     }
 
     points = contours[longest_contour_index];
+    return;
 }
 
 std::vector <float> getOptimalLineImage_constrained(cv::Mat LineXY, float delta){
@@ -373,6 +381,135 @@ std::vector <cv::Mat> extractBlobs(cv::Mat bw){
     return out;
 }
 
-void suppressDetections(std::vector<std::vector<int> >& boundingBoxes, std::vector<float> &areas){
+void suppressDetections(const std::vector<object>& originalObjects, std::vector<object> &suppressedObjects){
+    switch (originalObjects.size()){
+        case 0 : {
+            suppressedObjects = originalObjects;
+            return;
+        }
+        case 1 : {
+            suppressedObjects = originalObjects;
+            return;
+        }
+        default : {
+            std::vector <int> selected;
+            mergeByProximity(originalObjects, selected);
+            pruneobjs(originalObjects, selected, suppressedObjects);
+            return;
+        }
+    }
 
+
+}
+
+void pruneobjs(const std::vector<object>& originalObjects, std::vector<int> selected, std::vector<object>& suppressedObjects){
+    int i;
+    for (i = 0; i < (int) selected.size(); i++){
+        suppressedObjects.push_back(originalObjects[i]);
+    }
+    return;
+}
+
+void mergeByProximity(std::vector<object> objects, std::vector<int>& kept){
+    int nObjects_in = (int)objects.size();
+    std::vector <float> areas;
+    int i;
+    // vektor areas nafilamo z areas iz objektov
+    for (i=0; i<nObjects_in; i++){
+        areas.push_back(objects[i].area);
+    }
+
+    std::vector <object> orderedObjects; // urejeni od največje površine do najmanjše
+    std::vector <int> order; // kako smo jih premešali?
+    // order TODO: preveri a to dobro deluje?
+    double minVal,maxVal; int minIdx,maxIdx;
+    for (i=0; i<nObjects_in; i++) {
+        minMaxIdx(areas,&minVal, &maxVal, &minIdx, &maxIdx);
+        orderedObjects.push_back(objects[maxIdx]);
+        order.push_back(maxIdx);
+        areas[maxIdx] = areas[minIdx]/2;
+    }
+
+    // iz objects[___].bounding_box v matriko bounding boxov (bbs)
+    // Vsaka vrstica naj bo bounding box enega objekta
+    cv::Mat bbs(nObjects_in, (int) objects[0].bounding_box.size(),CV_32F);
+    for (i=0; i<nObjects_in; i++){
+        bbs.row(i) = cv::Mat(objects[i].bounding_box).t();
+    }
+
+    // Mu = bbs(:,1:2) + (bbs(:,3:4),2)/2);
+    cv::Mat Mu(nObjects_in,2,CV_32F);
+    Mu = bbs.colRange(0,2)+bbs.colRange(2,4)/2;
+
+    // box_sizes = sum(bbs(:,3:4),2)/2;
+    cv::Mat box_sizes;
+    reduce(bbs.colRange(2,4),box_sizes,REDUCE_TO_COL,CV_REDUCE_SUM);
+    box_sizes /= 2;
+
+    // Covs = (bbs(:,3:4)*1+5).^2;
+    cv::Mat Covs;
+    Covs = (bbs.colRange(2,3)+5);
+    Covs = Covs.mul(Covs);
+
+    std::vector <int> selected_out;
+    float mindist = 1;
+    int counter = 1;
+    while (true) {
+        std::vector <float> ratios;
+        cv::Mat C1,C2,C;
+        Covs.row(0).copyTo(C1);
+        for (i=0; i<nObjects_in; i++){
+            Covs.row(i).copyTo(C2);
+            C = C1+C2;
+            cv::Mat temp, temp2, temp3;
+            temp = Mu.row(0)-Mu.row(i); // Mu(1,:)-Mu(i,:)
+            temp = temp.mul(temp); // (Mu(1,:)-Mu(i,:)).^2
+            cv::divide(temp,C,temp2,1,CV_32F); // ((Mu(1,:)-Mu(i,:)).^2)./C
+            cv::reduce(temp2,temp3,REDUCE_TO_COL,CV_REDUCE_SUM,CV_32F); // sum(((Mu(1,:)-Mu(i,:)).^2)./C)
+            ratios.push_back(sqrt(temp3.at<float>(0))); // ratios(i) = sqrt(sum(((Mu(1,:)-Mu(i,:)).^2)./C)
+        }
+
+        // id_remove = (ratios <= mindist)
+        std::vector <bool> id_remove;
+        for (i=0; i<nObjects_in; i++){
+            id_remove.push_back(ratios[i]<=mindist);
+        }
+
+
+        break;
+    }
+    return;
+}
+
+void suppress_detections(cv::Mat bbs_in, cv::Mat Mu_in, std::vector<bool> selected, cv::Mat &bbs_out){
+    // bbs = bbs_in(selected,:); Mu = Mu_in(selected,:);
+    int i, n = 0;
+    cv::Mat bbs, Mu;
+    for (i=0; i<selected.size(); i++){
+        if(selected[i]){
+            bbs_in.row(i).copyTo(bbs.row(n));
+            Mu_in.row(i).copyTo(Mu.row(n));
+            n++;
+        }
+    }
+
+    cv::Mat minX, maxX, minY, maxY;
+    minX = Mu.col(0)-bbs.col(2)/2;
+    maxX = Mu.col(0)+bbs.col(2)/2;
+    minY = Mu.col(1)-bbs.col(3)/2;
+    maxY = Mu.col(1)+bbs.col(3)/2;
+
+    cv::reduce(minX,minX,REDUCE_TO_ROW, CV_REDUCE_MIN,CV_32F);
+    cv::reduce(minY,minY,REDUCE_TO_ROW, CV_REDUCE_MIN,CV_32F);
+    cv::reduce(maxX,maxX,REDUCE_TO_ROW, CV_REDUCE_MAX,CV_32F);
+    cv::reduce(maxY,maxY,REDUCE_TO_ROW, CV_REDUCE_MAX,CV_32F);
+
+
+    std::vector bbs_out_vector;
+    bbs_out_vector.push_back(minX.at<float>(0));
+    bbs_out_vector.push_back(minY.at<float>(0));
+    bbs_out_vector.push_back(maxX.at<float>(0) - minX.at<float>(0));
+    bbs_out_vector.push_back(maxY.at<float>(0) - minY.at<float>(0));
+
+    bbs_out = cv::Mat(bbs_out_vector,CV_32F).t(); // vector to matrix
 }
