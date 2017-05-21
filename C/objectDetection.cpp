@@ -382,27 +382,29 @@ std::vector <cv::Mat> extractBlobs(cv::Mat bw){
 }
 
 void suppressDetections(const std::vector<object>& originalObjects, std::vector<object> &suppressedObjects){
-    switch (originalObjects.size()){
-        case 0 : {
-            suppressedObjects = originalObjects;
-            return;
-        }
-        case 1 : {
-            suppressedObjects = originalObjects;
-            return;
-        }
-        default : {
-            std::vector <int> selected;
-            mergeByProximity(originalObjects, selected);
-            pruneobjs(originalObjects, selected, suppressedObjects);
-            return;
-        }
+    // suppressDetections.m:1
+    // function objs_out = suppressDetections(objs)
+
+    if (originalObjects.size()>=2){
+        std::vector <std::vector <int> > selected;
+        mergeByProximity(originalObjects, selected);
+        //pruneobjs(originalObjects, selected, suppressedObjects); TODO !!!!
     }
+    else{
+        suppressedObjects = originalObjects;
+    }
+    return;
+}
 
-
+void pruneobjs(const std::vector< std::vector <float> > &bbs, const std::vector <object> &originalObjects, std::vector<int> selected, std::vector<object>& suppressedObjects ){
+    // bbs mora biti vektor bounding box vektorjev
+    // originalObjects mora biti vektor originalnih objektov
+    // selected mora biti vektor z indeksi izbranih
+    // TODO ????
 }
 
 void pruneobjs(const std::vector<object>& originalObjects, std::vector<int> selected, std::vector<object>& suppressedObjects){
+    // TODO ????
     int i;
     for (i = 0; i < (int) selected.size(); i++){
         suppressedObjects.push_back(originalObjects[i]);
@@ -410,7 +412,7 @@ void pruneobjs(const std::vector<object>& originalObjects, std::vector<int> sele
     return;
 }
 
-void mergeByProximity(std::vector<object> objects, std::vector<int>& kept){
+void mergeByProximity(std::vector<object> objects, std::vector<std::vector <int> >& selected_out){
     int nObjects_in = (int)objects.size();
     std::vector <float> areas;
     int i;
@@ -432,9 +434,9 @@ void mergeByProximity(std::vector<object> objects, std::vector<int>& kept){
 
     // iz objects[___].bounding_box v matriko bounding boxov (bbs)
     // Vsaka vrstica naj bo bounding box enega objekta
-    cv::Mat bbs(nObjects_in, (int) objects[0].bounding_box.size(),CV_32F);
+    cv::Mat bbs(nObjects_in, (int) orderedObjects[0].bounding_box.size(),CV_32F);
     for (i=0; i<nObjects_in; i++){
-        bbs.row(i) = cv::Mat(objects[i].bounding_box).t();
+        bbs.row(i) = cv::Mat(orderedObjects[i].bounding_box).t();
     }
 
     // Mu = bbs(:,1:2) + (bbs(:,3:4),2)/2);
@@ -451,9 +453,10 @@ void mergeByProximity(std::vector<object> objects, std::vector<int>& kept){
     Covs = (bbs.colRange(2,3)+5);
     Covs = Covs.mul(Covs);
 
-    std::vector <int> selected_out;
+    //std::vector <int> selected_out;
     float mindist = 1;
     int counter = 1;
+    cv::Mat bbs_out;
     while (true) {
         std::vector <float> ratios;
         cv::Mat C1,C2,C;
@@ -475,8 +478,31 @@ void mergeByProximity(std::vector<object> objects, std::vector<int>& kept){
             id_remove.push_back(ratios[i]<=mindist);
         }
 
+        // bbs_out(counter,:) = suppress_detections(bbs,Mu,id_remove)
+        cv::Mat bbs_temp;
+        suppress_detections(bbs, Mu, id_remove, bbs_temp);
+        bbs_temp.copyTo(bbs_out.row(counter));
 
-        break;
+        // selected_out(counter).idx = ordr(id_remove);
+        std::vector <int> temp;
+        for (i=0; i<order.size(); i++){
+            if (id_remove[i]){
+                temp.push_back(order[i]);
+            }
+        }
+        selected_out.push_back(temp);
+
+        removeRows(bbs,bbs,id_remove); // bbs(id_remove,:) = [];
+        removeRows(Mu,Mu,id_remove); // Mu(id_remove,:) = [];
+        removeVectorElementsInt(order, order, id_remove); // ordr(id_remove,:) = []; TODO: zamenjaj s template
+        removeRows(Covs, Covs, id_remove);
+        removeRows(box_sizes,box_sizes,id_remove);
+
+        if(Mu.rows == 0){ // if (isempty(Mu))
+            break;
+        }
+
+        counter++;
     }
     return;
 }
@@ -504,8 +530,7 @@ void suppress_detections(cv::Mat bbs_in, cv::Mat Mu_in, std::vector<bool> select
     cv::reduce(maxX,maxX,REDUCE_TO_ROW, CV_REDUCE_MAX,CV_32F);
     cv::reduce(maxY,maxY,REDUCE_TO_ROW, CV_REDUCE_MAX,CV_32F);
 
-
-    std::vector bbs_out_vector;
+    std::vector <float> bbs_out_vector;
     bbs_out_vector.push_back(minX.at<float>(0));
     bbs_out_vector.push_back(minY.at<float>(0));
     bbs_out_vector.push_back(maxX.at<float>(0) - minX.at<float>(0));
