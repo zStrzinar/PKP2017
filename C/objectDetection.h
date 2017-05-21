@@ -28,11 +28,9 @@ std::vector <cv::Mat> extractBlobs(cv::Mat bw);
 
 void suppressDetections(const std::vector<object>& originalObjects, std::vector<object> &suppressedObjects);
 
-void pruneobjs(const std::vector< std::vector <float> > &bbs, const std::vector <object> &originalObjects, std::vector<int> selected, std::vector<object>& suppressedObjects );
+void pruneobjs(const cv::Mat &bbs, std::vector<std::vector <int> > selected, std::vector<object>& suppressedObjects );
 
-void pruneobjs(const std::vector<object>& originalObjects, std::vector<int> selected, std::vector<object>& suppressedObjects);
-
-void mergeByProximity(std::vector<object> objects, std::vector<std::vector <int> >& selected_out);
+void mergeByProximity(cv::Mat& bbs_out, std::vector<object> objects, std::vector<std::vector <int> >& selected_out);
 
 void suppress_detections(cv::Mat bbs_in, cv::Mat Mu_in, std::vector<bool> selected, cv::Mat &bbs_out);
 #endif //PKP2017_OBJECTDETECTION_H

@@ -381,38 +381,43 @@ std::vector <cv::Mat> extractBlobs(cv::Mat bw){
     return out;
 }
 
-void suppressDetections(const std::vector<object>& originalObjects, std::vector<object> &suppressedObjects){
+void suppressDetections(const std::vector<object>& originalObjects, std::vector<object> &suppressed){
     // suppressDetections.m:1
     // function objs_out = suppressDetections(objs)
 
+    cv::Mat bbs;
     if (originalObjects.size()>=2){
         std::vector <std::vector <int> > selected;
-        mergeByProximity(originalObjects, selected);
-        //pruneobjs(originalObjects, selected, suppressedObjects); TODO !!!!
+        mergeByProximity(bbs, originalObjects, selected);
+        pruneobjs(bbs, selected, suppressed);
     }
     else{
-        suppressedObjects = originalObjects;
+        suppressed = originalObjects;
     }
     return;
 }
 
-void pruneobjs(const std::vector< std::vector <float> > &bbs, const std::vector <object> &originalObjects, std::vector<int> selected, std::vector<object>& suppressedObjects ){
+void pruneobjs(const cv::Mat &bbs, std::vector<std::vector <int> > selected, std::vector<object>& suppressedObjects ){
     // bbs mora biti vektor bounding box vektorjev
     // originalObjects mora biti vektor originalnih objektov
     // selected mora biti vektor z indeksi izbranih
-    // TODO ????
-}
 
-void pruneobjs(const std::vector<object>& originalObjects, std::vector<int> selected, std::vector<object>& suppressedObjects){
-    // TODO ????
-    int i;
-    for (i = 0; i < (int) selected.size(); i++){
-        suppressedObjects.push_back(originalObjects[i]);
+    int i,j;
+    for (i=0; i<selected.size(); i++){
+        object current;
+
+        // iz bbs matrike poberemo vrstico in jo shranimo kot vektor v current.bounding_box
+        for (j=0; j<bbs.cols; j++){
+            current.bounding_box.push_back((int) bbs.row(i).at<float>(j));
+        }
+
+        current.area = current.bounding_box[2]*current.bounding_box[3];
+
+        // PARTS (starši) niso dodani v objekt!!!
     }
-    return;
 }
 
-void mergeByProximity(std::vector<object> objects, std::vector<std::vector <int> >& selected_out){
+void mergeByProximity(cv::Mat& bbs_out, std::vector<object> objects, std::vector<std::vector <int> >& selected_out){
     int nObjects_in = (int)objects.size();
     std::vector <float> areas;
     int i;
@@ -456,7 +461,6 @@ void mergeByProximity(std::vector<object> objects, std::vector<std::vector <int>
     //std::vector <int> selected_out;
     float mindist = 1;
     int counter = 1;
-    cv::Mat bbs_out;
     while (true) {
         std::vector <float> ratios;
         cv::Mat C1,C2,C;
@@ -504,6 +508,8 @@ void mergeByProximity(std::vector<object> objects, std::vector<std::vector <int>
 
         counter++;
     }
+
+
     return;
 }
 
