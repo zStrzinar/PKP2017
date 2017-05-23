@@ -17,8 +17,9 @@ void loadPriorModelFromDisk(Colorspace colorSpace, std::vector<cv::Mat> &mix_Mu,
 void getSpacialData(cv::Size em_image_size, cv::Mat& spatial_data);
 void momentMatchPdf(cv::Mat previous_Mu, cv::Mat current_Mu, cv::Mat previous_Cov, cv::Mat current_Cov, std::vector<float> current_w, cv::Mat& new_Mu, cv::Mat& new_Cov, cv::Mat& new_w);
 void testiranje();
+
 int main (int argc, char ** argv){
-    //testiranje();
+    testiranje();
     // -------------------------- Obdelava vhodnih argumentov ----------------------------------------------------------
     // Najprej samo obdelava vhodnih argumentov
     //  cilj obdelave je, da imamo na koncu inputPath, outputPath, inputFormat in outputFormat
