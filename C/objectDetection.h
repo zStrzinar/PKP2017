@@ -16,9 +16,9 @@ struct object{
     float area;
 };
 
-void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size original_frame_size, std::vector<object>& objects);
+void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFrameSize, std::vector<object>& objects);
 
-void keepLargestBlob(const cv::Mat &src, cv::Mat &dst);
+void keepLargestBlob(cv::Mat &in, cv::Mat &dst);
 
 void extractTheLargestCurve(const cv::Mat &dT, std::vector<cv::Point> &points);
 

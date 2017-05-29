@@ -11,18 +11,18 @@
 using namespace cv;
 using namespace std;
 
-void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size original_frame_size, std::vector <object> &objects){
-    // areas is 4-channel CV_8UC4 image. Each channel represents one area + 4th channel is ____
+void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFrameSize, std::vector <object> &objects){ // TODO: v Matlabu se poleg objektov vrnejo še xy koordinate nečesa in masked_sea
+    // areas is 4-channel CV_64FC4 image. Each channel represents one area + 4th channel is ____
     // original_frame_size is original frame size
-    if (areas.type()!=CV_8UC4){
-        std::cerr << "areas.type() is not unsigned 8bit!" << std::endl;
+    if (areas.type()!=CV_64FC4){
+        std::cerr << "areas.type() is not 64bit float!" << std::endl;
         std::cout << "areas.type() is " << areas.type() << std::endl;
     }
-    cv::Size size_edge = original_frame_size; // 460x640
+
     cv::Size size_obj(areas.cols, areas.rows); // 50x50
     std::vector<float> scl; // scaling vector
-    scl.push_back((float)size_edge.height/(float)size_obj.height); // razmerje višine med frame in 50x50
-    scl.push_back((float)size_edge.width/(float)size_obj.width); // razmerje širine med frame in 50x50
+    scl.push_back((float)originalFrameSize.height/(float)size_obj.height); // razmerje višine med frame in 50x50
+    scl.push_back((float)originalFrameSize.width/(float)size_obj.width); // razmerje širine med frame in 50x50
     float Tt_data[4] = {scl[0],0.0,0.0,scl[1]}; // podatki za diagonalno matriko Tt
     cv::Mat Tt(2, 2, CV_32F,Tt_data); // Diagonalna matrika za skaliranje
 
@@ -33,28 +33,36 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size original_fra
     std::vector <cv::Mat>areas_ch;
     cv::split(areas,areas_ch);
 
+    waitKey();
     areas_max = cv::max(areas_ch[0], areas_ch[1]);
     areas_max = cv::max(areas_ch[2], areas_max);
     areas_max = cv::max(areas_ch[3], areas_max);
     // areas_max je matrika največjih vrednosti po vseh pikslih.
 
+    // V T je 1(255) tam kjer je bila največja vrednost vseh pikslov ravno za morje (tretji kanal od štirih)
     cv::Mat T; // T is sea region
-    cv::Mat sea_region(areas_max.rows,areas_max.cols,CV_8UC1,Scalar::all(0)); // sea_region is the larges continuous sea region
+    cv::Mat sea_region(areas_max.rows,areas_max.cols,CV_8UC1,Scalar::all(0)); // sea_region is the largest continuous sea region
 
     cv::compare(areas_max, areas_ch[2], T, cv::CMP_EQ); // TODO: is areas_ch[2] sea region?
 
-    // poskrbi za 8 connectivity: TODO: a to že deluje???
-    cv::morphologyEx(T,T,MORPH_CLOSE, cv::getStructuringElement(MORPH_RECT, cv::Size(3,3)));
+    // TODO: odstrani 8-connectivity ozadja v T
 
     // keep only the largest continuous region
-    keepLargestBlob(T,sea_region);
-    sea_region=sea_region.t();
+    cv::Mat temp; temp = T.clone();
+
+    keepLargestBlob(T,sea_region); // To zdaj deluje
+
+    T = sea_region.clone();
+    // v MATLABU je tukaj še sea_region=~bwmorph(~sea_region,'clean'), kar odstrani osamele piksle. Tega itak ni ker smo ohrnili samo največjo regijo!
+    sea_region=sea_region.t(); // To je v redu
 
     cv::Mat T_transposed, T_diff, Tt_diff, firstCol, dT;
     cv::Mat dT2_diff, firstRow, dT2;
-    T_diff = T.rowRange(1,T.rows)-T.rowRange(0,T.rows-1); // nadomestek diff(T) v MATLAB; Od vrstic 2...end odštejemo vrstice 1...end-1. Torej gledamo kako so se spremenile vrednosti med dvema vrsticama
+    T_diff = (T.rowRange(1,T.rows)-T.rowRange(0,T.rows-1))|(T.rowRange(0,T.rows-1)-T.rowRange(1,T.rows)); // nadomestek diff(T) v MATLAB; Od vrstic 2...end odštejemo vrstice 1...end-1. Torej gledamo kako so se spremenile vrednosti med dvema vrsticama. TODO: poštimaj da ne bo več opozorila za neujemanje tipov!
+    // Ta moj način delanja diff() je malo drugačen od matlaba. V matlabu to pomeni res koliko je razlike med dvema sosednjima elementoma. Jaz pa samo gleda ALI je prišlo do spremembe? Jaz imam torej matriko booleanov! Ampak za delo naprej nam to ustreza!
+
     T_transposed = T.t(); // nadomestek T' v MATLAB
-    Tt_diff = T_transposed.rowRange(1,T_transposed.rows)-T_transposed.rowRange(0,T_transposed.rows-1); // nadomestek diff(T') v MATLAB
+    Tt_diff = (T_transposed.rowRange(1,T_transposed.rows)-T_transposed.rowRange(0,T_transposed.rows-1))|(T_transposed.rowRange(0,T_transposed.rows-1)-T_transposed.rowRange(1,T_transposed.rows)); // nadomestek diff(T') v MATLAB - glej razlago zgoraj! TODO: poštimaj da ne bo več opozorila za neujemanje tipov!
     Tt_diff = Tt_diff.t(); // nadomestek diff(T')' v MATLAB
 
     // popravek velikosti (rezultat diff()) in threshold
@@ -66,9 +74,9 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size original_fra
     firstRow = Mat::zeros(1,T_diff.cols,T_diff.type());
     vconcat(firstRow, T_diff, dT2);
     cv::compare(dT2, Mat::zeros(dT2.rows, dT2.cols, dT2.type()), dT2, CMP_NE);
+    cv::bitwise_or(dT,dT2,dT); // dT zdaj govori ali je prišlo do spremembe ali po vrsticah ali po stolpcih.
 
-    dT = dT | dT2; // dT zdaj govori ali je prišlo do spremembe ali po vrsticah ali po stolpcih.
-
+    // TODO: DO TUKAJ SEM PRIŠEL S PREVERJANJEM!
     cv::Mat Data;
     bool everythingIsSea = cv::countNonZero(T) == (T.rows*T.cols);
     bool noChangesInSea = cv::countNonZero(dT) == 0;
@@ -104,7 +112,7 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size original_fra
     float x0,y0,x1,y1;
     x0 = 0; // x0
     y0 = -(a[0]*x0 + a[2])/a[1];
-    x1 = original_frame_size.width;
+    x1 = originalFrameSize.width;
     y1 = -(a[0]*x1 + a[3])/a[1];
     std::vector <float> pts;
     pts.push_back(x0);
@@ -207,7 +215,23 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size original_fra
     return;
 }
 
-void keepLargestBlob(const cv::Mat &src, cv::Mat &dst){
+void keepLargestBlob(cv::Mat &in, cv::Mat &out){
+    // ne operiramo na in, ker smo ga nekako ponesreči spreminjali :/
+    // ne operiramo na out, ker vmes izhodna matrika prevzame drugačno velikost kot jo ima out, ki je bil deklariran in inicializiran že zunaj - pred klicem funkcije
+    // TODO: kaj če out ne bi bil inicializiran že pred klicem te funckije?
+    cv::Mat src; // to bo kopiju in-a
+    cv::Mat dst(in.rows+2,in.cols+2,CV_8UC1,Scalar::all(0)); // To bo 'kopija' out-a
+    src = in.clone();
+    // vhodni matriki moramo dodati okrog črno obrobo (en piksel debelo)
+    // obroba je potrebna da iskanje obrobe največjega objekta deluje pravilno
+    cv::Mat empty_col, empty_row;
+    empty_col = cv::Mat::zeros(src.rows, 1, src.type());
+    empty_row = cv::Mat::zeros(1, src.rows+2, src.type());
+    cv::hconcat(empty_col,src,src);
+    cv::hconcat(src,empty_col,src);
+    cv::vconcat(empty_row,src,src);
+    cv::vconcat(src,empty_row,src);
+
     // src is binary image (CV_8U) - 0 is background, 255 are objects
     // dst is binary image (CV_8U) of only the largest blob in src
     if (src.type()!=CV_8U) {
@@ -216,10 +240,11 @@ void keepLargestBlob(const cv::Mat &src, cv::Mat &dst){
     if (dst.type()!=CV_8U) {
         std::cerr << "dst must be a binary image! dst.type() must be CV_8U!";
     };
+
+    // najdi obrise in najdi največjega:
     vector<vector<Point> > contours; // Vector for storing contours
     vector<Vec4i> hierarchy; // required for function findContours()
-
-    findContours( src, contours, hierarchy,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE ); // Find the contours in the image
+    findContours( src, contours, hierarchy,CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE ); // Find the contours in the image
     // find the blob with the largest area
     double largest_area=0;
     int largest_contour_index=0;
@@ -233,8 +258,19 @@ void keepLargestBlob(const cv::Mat &src, cv::Mat &dst){
     }
 
     // mark the biggest blob in output image
-    Scalar color( 255,255,255); // white color
+    Scalar color( 255); // white color
     drawContours( dst, contours,largest_contour_index, color, CV_FILLED, 8, hierarchy ); // Draw the largest contour using previously stored index.
+
+    dst = dst.rowRange(1,dst.rows-1).colRange(1,dst.cols-1).clone(); // obrezemo dodane stolpce (prvi in zadnji) in vrstice (prva in zadnja)
+
+    assert(dst.rows == in.rows); // koncna velikost mora biti enaka zacetni!
+    assert(dst.cols == in.cols);
+
+    out = dst.clone();
+
+    assert(out.rows == in.rows); // koncna velikost mora biti enaka zacetni!
+    assert(out.cols == in.cols);
+
     return;
 }
 

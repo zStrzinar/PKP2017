@@ -143,14 +143,14 @@ void run_SSM(Colorspace colorSpace,
                 if (type_of_em.compare("em_seg") == 0)
                 {
                     //TODO: speed test for both
-                    cv::Mat pdf = normpdf(data.clone(), mix_Mu[i], prec, mix_Cov[i], epsilon);
+                    cv::Mat pdf = normpdf(data.clone(), mix_Mu[i], prec, mix_Cov[i], (double) epsilon);
                     pdf = pdf.t();
                     pdf.copyTo(p.row(i));
                     //pdf.row(0).copyTo(p.row(i));
                 }
                 else
                 {
-                    cv::Mat pdf = normpdf(data.clone(), mix_Mu[i], prec, mix_Cov[i], epsilon);
+                    cv::Mat pdf = normpdf(data.clone(), mix_Mu[i], prec, mix_Cov[i], (double) epsilon);
                     pdf = pdf.t()*mix_w[i];
                     pdf.row(0).copyTo(p.row(i));
                 }

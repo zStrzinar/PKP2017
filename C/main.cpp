@@ -8,6 +8,7 @@
 #include <iostream>
 #include "utility.h"
 #include "objectDetection.h"
+#include "test.h"
 
 using namespace cv;
 using namespace std;
@@ -200,9 +201,15 @@ int main (int argc, char ** argv){
 
         std::vector <cv::Mat>PI_i_channels;
         cv::split(mix_PI_i, PI_i_channels);
-        cv::Mat Q_sum_large_CV_8U; Q_sum_large.convertTo(Q_sum_large_CV_8U,CV_8UC4);
+        // cv::Mat Q_sum_large_CV_8U; Q_sum_large.convertTo(Q_sum_large_CV_8U,CV_8UC4);
         std::vector <object> detectedObjects;
-        getEdgeAndObjectNoScaling(Q_sum_large_CV_8U, original_size, detectedObjects);
+//        if (Q_sum_large.type() == CV_64FC4){
+//            std::cout << "Q_sum_large.type() je CV_64FC4" << std::endl;
+//        }
+//        else{
+//            std::cout << "Q_sum_large.type() je " << Q_sum_large.type() << std::endl;
+//        }
+        getEdgeAndObjectNoScaling(Q_sum_large, original_size, detectedObjects);
         std::cout << "Frame " << frame_number << " done" << std::endl;
     }
     return 0;
@@ -348,9 +355,10 @@ void momentMatchPdf(cv::Mat previous_Mu, cv::Mat current_Mu, cv::Mat previous_Co
 }
 
 void testiranje(){
-    cv::Mat A = (Mat_<double>(2,20) << 1.0,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0);
-    //Mat C = (Mat_<double>(3,3) << 0, -1, 0, -1, 5, -1, 0, -1, 0)
-    std::cout << "A = " << A << std::endl;
-    getOptimalLineImage_constrained(A, (float)0.1);
+    cv::Mat P_edge = getP_edge();
+    cv::Size Im_size(480,640);
+    std::vector <object> objects;
+    getEdgeAndObjectNoScaling(P_edge, Im_size, objects);
+    std::cout << "Stop" << std::endl;
     while(1);
 }
