@@ -12,7 +12,7 @@
 #include <iostream>
 
 struct object{
-    std::vector <int> bounding_box;
+    std::vector <float> bounding_box;
     float area;
 };
 
@@ -20,7 +20,7 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
 
 void keepLargestBlob(cv::Mat &in, cv::Mat &dst);
 
-void extractTheLargestCurve(const cv::Mat &dT, std::vector<cv::Point> &points);
+void extractTheLargestCurve(const cv::Mat &in, std::vector<cv::Point> &points);
 
 std::vector <float> getOptimalLineImage_constrained(cv::Mat LineXY, float delta);
 

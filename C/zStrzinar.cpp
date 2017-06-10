@@ -8,6 +8,24 @@ void printMat(std::string text,  cv::Mat matrika){
     std::cout << text << matrika << std::endl;
 }
 
+void printContour(std::string text, std::vector<cv::Point> contour){
+    std::cout << text;
+    int i;
+    for (i=0; i<contour.size(); i++){
+        std::cout << contour[i] << ", ";
+    }
+    std::cout << std::endl;
+}
+
+bool pointsEqual(cv::Point a, cv::Point b){
+    bool out =  (a.x==b.x) && (a.y==b.y);
+    std::cout << a << ", " << b << std::endl;
+    if (out) {
+                std::cout << "here!" << std::endl;
+        };
+    return out;
+}
+
 void removeRow(const cv::Mat &in, cv::Mat &out, int index){
     cv::Mat up, down;
     if(index>=0 && index < in.rows) {
@@ -117,6 +135,32 @@ void removeVectorElementsInt(const std::vector<int> &in, std::vector<int> &out, 
     for (i=0; i<in.size(); i++){
         if(!deleteVector[i]){
             output.push_back(in[i]);
+        }
+    }
+}
+
+void removeCirclebackY(std::vector<cv::Point> &contour) {
+    // Removes points from vector
+    // Finds the first point that has a smaller y than it's predecessor and deletes it together with following points
+    int i;
+    unsigned long n = contour.size();
+    for (i = 0; i < n - 1; i++) {
+        if (contour[i + 1].y < contour[i].y) {
+            break;
+        }
+    }
+    contour.erase(contour.begin()+i+1, contour.end());
+}
+
+void firstLastIdx(cv::Mat input, int& firstIdx, int& lastIdx){
+    int idx;
+    firstIdx = -1;
+    for (idx = 0; idx<std::max(input.cols,input.rows); idx++){
+        if(input.at<char>(idx)!=0){
+            if(firstIdx ==-1) {
+                firstIdx = idx;
+            }
+            lastIdx = idx;
         }
     }
 }

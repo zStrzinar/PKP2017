@@ -75,14 +75,35 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
     vconcat(firstRow, T_diff, dT2);
     cv::compare(dT2, Mat::zeros(dT2.rows, dT2.cols, dT2.type()), dT2, CMP_NE);
     cv::bitwise_or(dT,dT2,dT); // dT zdaj govori ali je prišlo do spremembe ali po vrsticah ali po stolpcih.
-
-    // TODO: DO TUKAJ SEM PRIŠEL S PREVERJANJEM!
+//    printMat("dT' ", dT);
+//    std::cout << std::endl;
+//    printMat("dT' ", dT);
+//    std::cout << std::endl;
     cv::Mat Data;
-    bool everythingIsSea = cv::countNonZero(T) == (T.rows*T.cols);
-    bool noChangesInSea = cv::countNonZero(dT) == 0;
-    if (not everythingIsSea && not noChangesInSea){
+    bool everythingIsSea = cv::countNonZero(T) == (T.rows*T.cols); // ! (sum(T(:)) != numel(T))
+    bool noChangesInSea = cv::countNonZero(dT) == 0; // ! (sum(dT(:)) != 0)
+//    printMat("dT' ", dT);
+//    std::cout << std::endl;
+    if (not everythingIsSea && not noChangesInSea){ // (sum(T(:)) != numel(T)) && (sum(dT(:)) != 0)
         std::vector<Point> contour;
         extractTheLargestCurve(dT, contour);
+        removeCirclebackY(contour);
+        cv::Point firstPoint,lastPoint;
+        firstPoint.x = contour[0].x; firstPoint.y = 0;
+        lastPoint.x = contour[contour.size()-1].x; lastPoint.y = min(contour[contour.size()].y+2,dT.rows);
+
+        contour.insert(contour.begin(),firstPoint);
+        contour.push_back(lastPoint);
+
+        int i;
+        cv::Point t0;
+        for (i=0; i<contour.size(); i++){
+            contour[i].x++;
+            t0 = contour[i];
+            contour[i].x = t0.y;
+            contour[i].y = t0.x;
+        }
+//        printMat("dT' ", dT);
 
         Data = cv::Mat(2,(int)contour.size(),CV_32F);
         // contour is in "50x50" coordinate system. We must transform to frame original coordinates! (using Tt scaling matrix)
@@ -139,38 +160,26 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
         cv::reduce(CC[i], colsSum, REDUCE_TO_ROW, CV_REDUCE_SUM, CV_32F); // reduce lahko vrne samo 32S, 32F ali 64F
         cv::reduce(CC[i], rowsSum, REDUCE_TO_COL, CV_REDUCE_SUM, CV_32F);
         // TODO: spremeni tip matrik CC[] v CV_8U
-        for (col = 0; col<colsSum.cols; col++){ // TODO: lahko to nadomestiš z minMaxLoc?
-            if(colsSum.at<char>(col)!=0){
-                if(col_min ==-1) {
-                    col_min = col;
-                }
-                col_max = col;
-            }
-        }
-        for (row = 0; row<rowsSum.rows; row++){ // TODO: lahko to nadomestiš z minMaxLoc?
-            if(rowsSum.at<char>(row)!=0){
-                if(row_min ==-1) {
-                    row_min = row;
-                }
-                row_max = row;
-            }
-        }
+        colsSum.convertTo(colsSum,CV_8U);
+        firstLastIdx(colsSum,col_min,col_max);
 
-        row_min-=1; col_min -=1;
-        int height, width;
-        height = col_max-col_min; // X je višina
-        width = row_max-row_min; // Y je širina
+        rowsSum.convertTo(rowsSum,CV_8U);
+        firstLastIdx(rowsSum,row_min,row_max);
+        row_max++; col_max++; // da dosežemo ujemanje z matlabom
+        float height, width;
+        height = row_max-row_min;
+        width = col_max-col_min;
 
         // rescale bounding box with values from Tt
-        row_min*=Tt.at<float>(0,0);
-        col_min*=Tt.at<float>(1,1);
+        row_min*=Tt.at<float>(0,0); // row == y
+        col_min*=Tt.at<float>(1,1); // col == x
         width*=Tt.at<float>(0,0);
         height*=Tt.at<float>(1,1);
 
         // Make a boundingBox object - a vector!
-        std::vector <int> boundingBox;
-        boundingBox.push_back(row_min);
-        boundingBox.push_back(col_min);
+        std::vector <float> boundingBox;
+        boundingBox.push_back((float)col_min); // TODO: mogoče sta row_min in col_min zamešana
+        boundingBox.push_back((float)row_min);
         boundingBox.push_back(width);
         boundingBox.push_back(height);
 
@@ -178,27 +187,32 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
 
         // To je zdaj samo za preverjanje ali naj bounding box dodamo na seznam (v vektor)?
         // Poiščemo piksel ki ima po y najmanjšo koordinato. (Poiščemo x in y koordinati v 50x50)
-        // Transformiamo v 860x640
-        col_min/=Tt.at<float>(0,0);
+        // Potem transformiamo v 860x640
+        col_min/=Tt.at<float>(0,0); // ker smo piksel ki ima po y najmanjšo koordinato že poiskali gor - zdaj ga moramo samo transformirati iz 860x640 v 50x50 - to je isto kot ymin v [ymin,loc]=min(y(:)) v matlabu
         // TODO: ali je tukaj namen da najdemo koordinato zgoraj levo??? za bounding box al kaj...
-        // Tole zdaj poišče zadnjo vrstico, ki ima v stolpcu col_min vrednost različno od 0.
+        // Tole zdaj poišče prvo vrstico, ki ima v stolpcu col_min vrednost različno od 0.
+
         for (row=0; row<CC[i].rows; row++){
-            if(CC[i].at<char>(col_min, row)){ // TODO: nisem prepričan glede zaporedja col,row ali pa row,col
+            if(CC[i].at<char>(row,col_min)){
                 row_min = row;
-                // TODO: bi tukaj moral biti break?
+                break;
             }
         }
-        col_min*=Tt.at<float>(0,0); // skaliranje
-        row_min*=Tt.at<float>(1,1);
+        col_min++; row_min++;
+        float row_min_f,col_min_f;
+        col_min_f=col_min*Tt.at<float>(0,0); // skaliranje
+        row_min_f=row_min*Tt.at<float>(1,1);
 
         cv::Mat temp;
-        temp = abs(xy_subset.row(0)-col_min); // ???
+        temp = abs(xy_subset.row(0)-col_min_f); // ???
         cv::Point loc;
         cv::minMaxLoc(temp, NULL, NULL, &loc, NULL); // find min. locations
         cv::Mat boundry;
         boundry = xy_subset.col(loc.x);
 
-        if (boundry.at<float>(0,1)>row_min){ // TODO: tukaj spet preveri kaj pomenita 0,1 ??
+        printMat("boundary = ", boundry);
+
+        if (boundry.at<float>(1,0)>row_min_f){ // TODO: tukaj spet preveri kaj pomenita 0,1 ??
             continue;
         }
 
@@ -210,6 +224,7 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
         objects.push_back(thisObject);
     }
     std::vector<object> suppressedObjects;
+    // PREVERJENO DO TUKAJ
     suppressDetections(objects, suppressedObjects);
 
     return;
@@ -274,20 +289,30 @@ void keepLargestBlob(cv::Mat &in, cv::Mat &out){
     return;
 }
 
-void extractTheLargestCurve(const cv::Mat &src, std::vector<cv::Point> &points){
+void extractTheLargestCurve(const cv::Mat &in, std::vector<cv::Point> &points){
+    cv::Mat src = in.clone();
     // src is binary image matrix (CV_8U)
     // points is output vector of points representing the largest curve
     if (src.type()!=CV_8U){
         std::cerr << "src.type() must be CV_8U! source image must be binary!" << std::endl;
     }
 
+//    cv::Mat empty_col, empty_row;
+//    empty_col = cv::Mat::zeros(src.rows, 1, src.type());
+//    empty_row = cv::Mat::zeros(1, src.rows+2, src.type());
+//    cv::hconcat(empty_col,src,src);
+//    cv::hconcat(src,empty_col,src);
+//    cv::vconcat(empty_row,src,src);
+//    cv::vconcat(src,empty_row,src);
+
     // find all curves
     vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
-    cv::findContours( src, contours, hierarchy, CV_RETR_LIST , CV_CHAIN_APPROX_SIMPLE );
+    cv::findContours( src, contours, hierarchy, CV_RETR_LIST , CV_CHAIN_APPROX_NONE );
+
 
     // TODO: kaj naj se zgodi ko NI črt?
-    if (contours.size() == 1){
+    if (contours.size() == 0){
         std::cerr << "Not-handled behaviour! No curves found!" << std::endl;
     }
 
@@ -398,22 +423,42 @@ std::vector <float> getOptimalLineImage_constrained(cv::Mat LineXY, float delta)
 }
 
 std::vector <cv::Mat> extractBlobs(cv::Mat bw){
-    std::vector <cv::Mat> out;
+    cv::Mat src;
+    std::vector<cv::Mat> out;
+    src = bw.clone();
+    // vhodni matriki moramo dodati okrog črno obrobo (en piksel debelo)
+    // obroba je potrebna da iskanje obrobe največjega objekta deluje pravilno
+    cv::Mat empty_col, empty_row;
+    empty_col = cv::Mat::zeros(src.rows, 1, src.type());
+    empty_row = cv::Mat::zeros(1, src.rows+2, src.type());
+    cv::hconcat(empty_col,src,src);
+    cv::hconcat(src,empty_col,src);
+    cv::vconcat(empty_row,src,src);
+    cv::vconcat(src,empty_row,src);
 
+    // src is binary image (CV_8U) - 0 is background, 255 are objects
+    // dst is binary image (CV_8U) of only the largest blob in src
+    if (src.type()!=CV_8U) {
+        std::cerr << "src must be a binary image! src.type() must be CV_8U!";
+    };
+
+    // najdi obrise in najdi največjega:
     vector<vector<Point> > contours; // Vector for storing contours
-    vector<Vec4i> hierarchy;
-
-    cv::findContours( bw, contours, hierarchy,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE ); // Find the contours in the image
+    vector<Vec4i> hierarchy; // required for function findContours()
+    findContours( src, contours, hierarchy,CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE ); // Find the contours in the image
 
     int idx = 0;
     for( ; idx >= 0; idx = hierarchy[idx][0] )
     {
-        cv::Mat currentBlob;
-        currentBlob = Mat::zeros(bw.rows,bw.cols,CV_8U);
+        cv::Mat currentBlob(src.rows,src.cols,CV_8U);
         Scalar color( 255, 255, 255 );
         drawContours(currentBlob,contours,idx,color, CV_FILLED, 8, hierarchy);
+        currentBlob = currentBlob.rowRange(1,currentBlob.rows-1).colRange(1,currentBlob.cols-1).clone(); // obrezemo dodane stolpce (prvi in zadnji) in vrstice (prva in zadnja)
         out.push_back(currentBlob.clone());
+        assert(out[idx].rows == bw.rows); // koncna velikost mora biti enaka zacetni!
+        assert(out[idx].cols == bw.cols);
     }
+
     return out;
 }
 
