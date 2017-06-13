@@ -114,7 +114,7 @@ void run_SSM(Colorspace colorSpace,
              long double epsilon,
              cv::Mat &Q_sum_large,
              cv::Mat &mix_PI_i){
-    try{
+//    try{
         double p_unknown = GetUnknownWeightForTheFeatureModel(colorSpace, sizeMask, use_uniform_component);
         bool use_gauss = false;
         int sizMix = (int)mix_w.size();
@@ -348,10 +348,10 @@ void run_SSM(Colorspace colorSpace,
             //TODO: log.warn("The EM did not converge in %d iterations",maxEMsteps);
         }
 
-    }catch(cv::Exception& ex){
-        const char* err_msg = ex.what();
-        std::cout << "exception caught: " << err_msg << std::endl;
-    }
+//    }catch(cv::Exception& ex){
+//        const char* err_msg = ex.what();
+//        std::cout << "exception caught: " << err_msg << std::endl;
+//    }
 }
 
 double prod(cv::Mat mat){

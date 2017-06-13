@@ -11,7 +11,7 @@
 using namespace cv;
 using namespace std;
 
-void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFrameSize, std::vector <object> &objects){ // TODO: v Matlabu se poleg objektov vrnejo še xy koordinate nečesa in masked_sea
+void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFrameSize, std::vector <object> &objects, cv::Mat &xy_subset, std::vector<object> &suppressedObjects, cv::Mat &sea_region){ // TODO: v Matlabu se poleg objektov vrnejo še xy koordinate nečesa in masked_sea
     // areas is 4-channel CV_64FC4 image. Each channel represents one area + 4th channel is ____
     // original_frame_size is original frame size
     if (areas.type()!=CV_64FC4){
@@ -33,7 +33,6 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
     std::vector <cv::Mat>areas_ch;
     cv::split(areas,areas_ch);
 
-    waitKey();
     areas_max = cv::max(areas_ch[0], areas_ch[1]);
     areas_max = cv::max(areas_ch[2], areas_max);
     areas_max = cv::max(areas_ch[3], areas_max);
@@ -41,7 +40,7 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
 
     // V T je 1(255) tam kjer je bila največja vrednost vseh pikslov ravno za morje (tretji kanal od štirih)
     cv::Mat T; // T is sea region
-    cv::Mat sea_region(areas_max.rows,areas_max.cols,CV_8UC1,Scalar::all(0)); // sea_region is the largest continuous sea region
+    sea_region = cv::Mat(areas_max.rows,areas_max.cols,CV_8UC1,Scalar::all(0)); // sea_region is the largest continuous sea region
 
     cv::compare(areas_max, areas_ch[2], T, cv::CMP_EQ); // TODO: is areas_ch[2] sea region?
 
@@ -128,7 +127,7 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
     // ************ ?????????????????????????? **************************
     std::vector <float> a;
     a = getOptimalLineImage_constrained(Data, delta);
-    cv::Mat xy_subset = Data.clone();
+    xy_subset = Data.clone();
 
     float x0,y0,x1,y1;
     x0 = 0; // x0
@@ -210,8 +209,6 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
         cv::Mat boundry;
         boundry = xy_subset.col(loc.x);
 
-        printMat("boundary = ", boundry);
-
         if (boundry.at<float>(1,0)>row_min_f){ // TODO: tukaj spet preveri kaj pomenita 0,1 ??
             continue;
         }
@@ -223,8 +220,8 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
 
         objects.push_back(thisObject);
     }
-    std::vector<object> suppressedObjects;
-    // PREVERJENO DO TUKAJ
+    suppressedObjects;
+
     suppressDetections(objects, suppressedObjects);
 
     return;
@@ -472,14 +469,14 @@ void suppressDetections(const std::vector<object>& originalObjects, std::vector<
         mergeByProximity(bbs, originalObjects, selected);
         pruneobjs(bbs, selected, suppressed);
     }
-    else{
+    else{ // there is nothing to suppress
         suppressed = originalObjects;
     }
     return;
 }
 
 void pruneobjs(const cv::Mat &bbs, std::vector<std::vector <int> > selected, std::vector<object>& suppressedObjects ){
-    // bbs mora biti vektor bounding box vektorjev
+    // bbs mora biti matrika bounding box vektorjev - vsak bounding box je svoja vrstica
     // originalObjects mora biti vektor originalnih objektov
     // selected mora biti vektor z indeksi izbranih
 

@@ -16,7 +16,7 @@ struct object{
     float area;
 };
 
-void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFrameSize, std::vector<object>& objects);
+void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFrameSize, std::vector <object> &objects, cv::Mat &xy_subset, std::vector<object> &suppressedObjects, cv::Mat &sea_region);
 
 void keepLargestBlob(cv::Mat &in, cv::Mat &dst);
 
@@ -30,7 +30,7 @@ void suppressDetections(const std::vector<object>& originalObjects, std::vector<
 
 void pruneobjs(const cv::Mat &bbs, std::vector<std::vector <int> > selected, std::vector<object>& suppressedObjects );
 
-void mergeByProximity(cv::Mat& bbs_out, std::vector<object> objects, std::vector<std::vector <int> >& selected_out);
+void mergeByProximity(cv::Mat& bbs_out, std::vector<object> bbs, std::vector<std::vector <int> >& selected_out);
 
 void suppress_detections(cv::Mat bbs_in, cv::Mat Mu_in, std::vector<bool> selected, cv::Mat &bbs_out);
 #endif //PKP2017_OBJECTDETECTION_H

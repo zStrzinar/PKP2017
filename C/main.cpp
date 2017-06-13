@@ -6,9 +6,12 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
+#include <stdio.h>
 #include "utility.h"
 #include "objectDetection.h"
 #include "test.h"
+#include "showResults.h"
+#include "zStrzinar.h"
 
 using namespace cv;
 using namespace std;
@@ -17,10 +20,9 @@ void printHelp();
 void loadPriorModelFromDisk(Colorspace colorSpace, std::vector<cv::Mat> &mix_Mu, std::vector<cv::Mat> &mix_Cov, std::vector<cv::Mat> &mix_w, std::vector<cv::Mat> &static_prec);
 void getSpacialData(cv::Size em_image_size, cv::Mat& spatial_data);
 void momentMatchPdf(cv::Mat previous_Mu, cv::Mat current_Mu, cv::Mat previous_Cov, cv::Mat current_Cov, std::vector<float> current_w, cv::Mat& new_Mu, cv::Mat& new_Cov, cv::Mat& new_w);
-void testiranje();
 
 int main (int argc, char ** argv){
-    testiranje();
+    //testiranje();
     // -------------------------- Obdelava vhodnih argumentov ----------------------------------------------------------
     // Najprej samo obdelava vhodnih argumentov
     //  cilj obdelave je, da imamo na koncu inputPath, outputPath, inputFormat in outputFormat
@@ -93,21 +95,23 @@ int main (int argc, char ** argv){
     int frame_number;
     cv::Mat frame_original, frame_resized, frame_colorspace;
     cv::Mat color_data_rows[3];
-    cv::Size resized_size(em_image_size.width*4,em_image_size.height*4);
+    cv::Size resized_size(em_image_size.width,em_image_size.height);
     cv::Size original_size;
     cv::namedWindow("Moje okno",WINDOW_AUTOSIZE);
     for(frame_number = 1; frame_number<=inputVideo.get(CV_CAP_PROP_FRAME_COUNT); frame_number++){
         inputVideo.set(CV_CAP_PROP_POS_FRAMES, frame_number-1);
         inputVideo >> frame_original;
 
-        frame_original = imread("00001.jpg", CV_LOAD_IMAGE_COLOR); // TODO: to je samo za debug!
+        char currentFile[17];
+        sprintf(currentFile, "images/%05d.jpg",frame_number);
+
+        std::cout << currentFile << std::endl;
+        frame_original = imread(currentFile, CV_LOAD_IMAGE_COLOR); // TODO: to je samo za debugiranje!
         original_size = frame_original.size();
+        //printMat("frame_resized = ", frame_resized);
+        std::cout << resized_size << std::endl;
 
         cv::resize(frame_original,frame_resized,resized_size,0,0,INTER_LINEAR);
-
-        frame_resized = imread("temp.jpg", CV_LOAD_IMAGE_COLOR); // TODO: to je samo za debugiranje!
-
-
         switch (colorSpace){
             case YCRCB:{
                 cv::cvtColor(frame_resized, frame_colorspace, CV_BGR2YCrCb);
@@ -141,9 +145,9 @@ int main (int argc, char ** argv){
         cv::vconcat(color_data_rows,3,color_data); // zlepim rows v color_data
         color_data.convertTo(color_data,CV_64F);
         cv::Mat dataEM;//(5,em_image_size[0]*em_image_size[1],CV_64F);
+
         cv::vconcat(spatial_data,color_data,dataEM); // Zlepim skupaj color_data in spatial_data
         cv::Mat current_Mu[3], current_Cov[3], current_region;
-
         if (frame_number==1){
             float df[] = {0,0.3,0.5,1}; // to so rocno nastavljene zacetne meje med območji
             std::vector <float> vertical_ratio(df, df+sizeof(df)/sizeof(float) ); // to samo ustvari vektor in ga zafila z vrednostmi df[]
@@ -155,7 +159,7 @@ int main (int argc, char ** argv){
             for (k=0; k<=2; k++){ // cez vse regije:
                 current_region = dataEM.colRange((int)vertical_ratio[k],(int)vertical_ratio[k+1]); // v dataEM so vse lokaije kar po vrsti v vrstici
                 // TODO: ali je tukaj (eno vrstico gor) pravilen range? vključenost prvega in zadnjega stolpca v primerjavi z Matlabom?
-//                current_w[k]=1.0/3.0; // pomoje je tole nadomeščeno tri vrstice dol
+
                 cv::calcCovarMatrix(current_region, current_Cov[k], current_Mu[k], CV_COVAR_NORMAL|CV_COVAR_COLS); // Kovariančna matrika in srednja vrednost
                 current_Cov[k] = current_Cov[k] / (current_region.cols - 1);
                 // Vpis kovariančne matrike, srednje vrednosti, w v ustrezne vektorje (current_mix_...):
@@ -180,10 +184,10 @@ int main (int argc, char ** argv){
                     current_region = dataEM.colRange((int)vertical_ratio[2*k], (int)vertical_ratio[2*k+1]); // 2*k je zato ker tukaj je vertical_ratio kombinacija: [zacetek,konec,zacetek,konec,zacetek,konec]
                     // TODO: ali je tukaj (eno vrstico gor) pravilen range? vključenost prvega in zadnjega stolpca v primerjavi z Matlabom?
                     cv::calcCovarMatrix(current_region, current_Cov[k], current_Mu[k], CV_COVAR_NORMAL|CV_COVAR_COLS, current_region.type()); // Kovariančna matrika in srednja vrednost
+                    current_Cov[k] = current_Cov[k] / (current_region.cols - 1);
 
                     momentMatchPdf(current_mix_Mu[k], current_Mu[k], current_mix_Cov[k], current_Cov[k], w_mix, current_mix_Mu[k], current_mix_Cov[k], current_mix_W[k]);
                 }
-
                 float sum_w = 0;
                 for (k=0; k<3; k++){ // seštevek w po vseh regijah
                     sum_w += current_mix_W[k].at<double>(0,0);
@@ -199,17 +203,21 @@ int main (int argc, char ** argv){
                 maxEMsteps, current_mix_W, PI_i, dataEM, current_mix_Mu, current_mix_Cov, prior_mix_Mu,
                 prior_mix_Prec, use_prior_on_mixture, eps, Q_sum_large, mix_PI_i);
 
+//        printMat("current_mix_Mu[0] = ", current_mix_Mu[0]);
+//        printMat("current_mix_Mu[1] = ", current_mix_Mu[1]);
+//        printMat("current_mix_Mu[2] = ", current_mix_Mu[2]);
+
         std::vector <cv::Mat>PI_i_channels;
         cv::split(mix_PI_i, PI_i_channels);
-        // cv::Mat Q_sum_large_CV_8U; Q_sum_large.convertTo(Q_sum_large_CV_8U,CV_8UC4);
+
         std::vector <object> detectedObjects;
-//        if (Q_sum_large.type() == CV_64FC4){
-//            std::cout << "Q_sum_large.type() je CV_64FC4" << std::endl;
-//        }
-//        else{
-//            std::cout << "Q_sum_large.type() je " << Q_sum_large.type() << std::endl;
-//        }
-        getEdgeAndObjectNoScaling(Q_sum_large, original_size, detectedObjects);
+        cv::Mat xy_subset, sea_region; std::vector<object> suppressedObjects;
+        getEdgeAndObjectNoScaling(Q_sum_large, original_size, detectedObjects, xy_subset, suppressedObjects, sea_region);
+
+        // Display resultes
+        cv::Mat imageToShow;
+        displayEdgeAndObjects(frame_original.clone(), imageToShow, xy_subset, suppressedObjects, sea_region, current_mix_Mu, current_mix_Cov, current_mix_W, 1);
+
         std::cout << "Frame " << frame_number << " done" << std::endl;
     }
     return 0;
@@ -352,13 +360,4 @@ void momentMatchPdf(cv::Mat previous_Mu, cv::Mat current_Mu, cv::Mat previous_Co
     new_Cov = current_w[0]*temporary1 + current_w[1]*temporary2-new_mu*new_mu.t();
 
     new_w = cv::Mat(1,1,CV_64F,sum_w);
-}
-
-void testiranje(){
-    cv::Mat P_edge = getP_edge();
-    cv::Size Im_size(480,640);
-    std::vector <object> objects;
-    getEdgeAndObjectNoScaling(P_edge, Im_size, objects);
-    std::cout << "Stop" << std::endl;
-    while(1);
 }
