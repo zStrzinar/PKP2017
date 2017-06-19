@@ -31,6 +31,8 @@ void displayEdgeAndObjects( const cv::Mat &srcImg,
     new_column = T * current_mix_Cov[0].rowRange(0, 2).colRange(0, 2) * T;
     mixture_spatial_Cov.push_back(new_column);
 
+
+
     int i;
     for (i = 1; i < current_mix_Mu.size(); i++) {
         new_column = T * current_mix_Mu[i].rowRange(0, 2);
@@ -66,15 +68,38 @@ void displayEdgeAndObjects1( const cv::Mat &srcImg,
                              cv::Mat &current_mix_Mu,
                              std::vector<cv::Mat> &current_mix_Cov,
                              cv::Mat &current_mix_W){
-    cv::Mat Image_plus, Regions;
+    cv::Mat Image_plus, Regions;    // Image_plus je originalna slika + elipse + meja morja + ovire
+                                    // Regions je dvo-barvna slika ki prikazuje morje - ne-morje
     Image_plus = srcImg.clone();
 
+    // Add ellipses
     int i;
+
+
     for(i=0;i<3;i++){
         cv::Point2f mean((float)current_mix_Mu.col(i).at<double>(0),(float)current_mix_Mu.col(i).at<double>(1));
         cv::RotatedRect ellipse = getErrorEllipse(2.4477,mean,current_mix_Cov[i]);
-
         cv::ellipse(Image_plus, ellipse,cv::Scalar::all(255),2);
+    }
+
+    // Add line
+    if (!sel_xy.empty()){
+        // Transform matrix to contour form (vector of 2D points)
+        std::vector<std::vector<cv::Point> > contours;
+        std::vector<cv::Point> contour;
+        for(i=0;i<sel_xy.cols;i++){
+            cv::Point point;
+            point.y = (int)round(sel_xy.at<float>(1,i));
+            point.x = (int)round(sel_xy.at<float>(0,i));
+            contour.push_back(point);
+        }
+        contours.push_back(contour);
+//        for(i=0;i<contour.size();i++){
+//            std::cout << contour[i].x << "," << contour[i].y << std::endl;
+//        }
+        cv::Scalar color(0,255,0); // green
+        drawEdge(Image_plus, contour, color,2);
+//        std::cout << "Added line!" << std::endl;
     }
 
     namedWindow("Results",CV_WINDOW_AUTOSIZE);
@@ -83,6 +108,7 @@ void displayEdgeAndObjects1( const cv::Mat &srcImg,
 }
 
 cv::RotatedRect getErrorEllipse(double chisquare_val, cv::Point2f mean, cv::Mat covmat){
+    // Round covmat!
 
     //Get the eigenvalues and eigenvectors
     cv::Mat eigenvalues, eigenvectors;
@@ -99,11 +125,20 @@ cv::RotatedRect getErrorEllipse(double chisquare_val, cv::Point2f mean, cv::Mat 
     angle = 180*angle/3.14159265359;
 
     //Calculate the size of the minor and major axes
-    double halfmajoraxissize=chisquare_val*sqrt(eigenvalues.at<double>(0));
-    double halfminoraxissize=chisquare_val*sqrt(eigenvalues.at<double>(1));
+    double halfmajoraxissize=chisquare_val*sqrt(abs(eigenvalues.at<double>(0)));
+    double halfminoraxissize=chisquare_val*sqrt(abs(eigenvalues.at<double>(1)));
 
     //Return the oriented ellipse
     //The -angle is used because OpenCV defines the angle clockwise instead of anti-clockwise
-    return cv::RotatedRect(mean, cv::Size2f(halfmajoraxissize, halfminoraxissize), -angle);
+    return cv::RotatedRect(mean, cv::Size2f((float)halfmajoraxissize, (float)halfminoraxissize), (float)-angle);
 
+}
+
+void drawEdge(cv::Mat &Img, std::vector<cv::Point> edge, cv::Scalar color, int width){
+    int i;
+    for (i=0; i<(edge.size()-1); i++){
+        line(Img, edge[i], edge[i+1],color,width);
+    }
+
+    return;
 }

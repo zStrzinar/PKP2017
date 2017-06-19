@@ -3,6 +3,7 @@
 //
 
 #include "utility.h"
+#include "zStrzinar.h"
 
 using namespace cv;
 using namespace std;
@@ -114,7 +115,9 @@ void run_SSM(Colorspace colorSpace,
              long double epsilon,
              cv::Mat &Q_sum_large,
              cv::Mat &mix_PI_i){
-//    try{
+
+    printMat("data.colRange(0,10) = ", data.colRange(0,10));
+
         double p_unknown = GetUnknownWeightForTheFeatureModel(colorSpace, sizeMask, use_uniform_component);
         bool use_gauss = false;
         int sizMix = (int)mix_w.size();
@@ -288,6 +291,9 @@ void run_SSM(Colorspace colorSpace,
             cv::Mat x_mu;
             cv::Mat x_2_mu;
             cv::Mat c;
+//            printMat("mix_Cov[0]", mix_Cov[0]); // TODO: bris!
+//            printMat("mix_Cov[1]", mix_Cov[1]); // TODO: bris!
+//            printMat("mix_Cov[2]", mix_Cov[2]); // TODO: bris!
             for (int k = 0; k < sizMix; k++)
             {
 
@@ -301,23 +307,25 @@ void run_SSM(Colorspace colorSpace,
                 x_mu = x_mu/sum_pk;
                 x_2_mu = (data*w_data.t())/sum_pk ;
                 c = x_2_mu - x_mu*x_mu.t();
-
                 // naive update of mean and covariance
-                mix_Cov[k] = c;
+                mix_Cov[k] = c.clone();
                 x_mu.copyTo(mix_Mu[k]);
                 mix_w[k].at<double>(0) = alpha_i.at<double>(0,k);
                 cv::Mat res;
                 if (use_prior_on_mixture)
                 {
                     int i_c_d=k;
-//                    int i_c_o=k;
                     int i_c_0 = k;
+
                     res = mergePd(mix_Mu[i_c_d], mix_Cov[k],
                                   prior_mix_Mu[i_c_0],
                                   cv::Mat(), prior_mix_Prec[i_c_0]);
                     res.copyTo(mix_Mu[i_c_d]);
                 }
             }
+//            printMat("mix_Cov[0]", mix_Cov[0]); // TODO: bris!
+//            printMat("mix_Cov[1]", mix_Cov[1]); // TODO: bris!
+//            printMat("mix_Cov[2]", mix_Cov[2]); // TODO: bris!
 
             cv::Mat mix_w_sum_mat(1,1,CV_64F,Scalar(0));
             double mix_w_sum;

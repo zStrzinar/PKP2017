@@ -22,7 +22,7 @@ void getSpacialData(cv::Size em_image_size, cv::Mat& spatial_data);
 void momentMatchPdf(cv::Mat previous_Mu, cv::Mat current_Mu, cv::Mat previous_Cov, cv::Mat current_Cov, std::vector<float> current_w, cv::Mat& new_Mu, cv::Mat& new_Cov, cv::Mat& new_w);
 
 int main (int argc, char ** argv){
-    //testiranje();
+    // testiranje();
     // -------------------------- Obdelava vhodnih argumentov ----------------------------------------------------------
     // Najprej samo obdelava vhodnih argumentov
     //  cilj obdelave je, da imamo na koncu inputPath, outputPath, inputFormat in outputFormat
@@ -108,13 +108,17 @@ int main (int argc, char ** argv){
         std::cout << currentFile << std::endl;
         frame_original = imread(currentFile, CV_LOAD_IMAGE_COLOR); // TODO: to je samo za debugiranje!
         original_size = frame_original.size();
-        //printMat("frame_resized = ", frame_resized);
-        std::cout << resized_size << std::endl;
 
-        cv::resize(frame_original,frame_resized,resized_size,0,0,INTER_LINEAR);
+        cv::resize(frame_original,frame_resized,resized_size,0.5,0.5,INTER_LINEAR);
+
         switch (colorSpace){
             case YCRCB:{
+                cv::Mat Y,Cr,Cb; std::vector<cv::Mat> bgr,YCrCb;
+                cv::split(frame_resized, bgr);
+                Y = 0.0593*bgr[2]+(1-0.0593-0.2627)*bgr[1]+0.2627*bgr[1];
                 cv::cvtColor(frame_resized, frame_colorspace, CV_BGR2YCrCb);
+                std::cout << std::endl << std::endl << std::endl << Y << std::endl << std::endl << std::endl << std::endl;
+                //std::cout << std::endl << std::endl << std::endl << frame_colorspace << std::endl << std::endl << std::endl << std::endl;
                 break;
             }
             case HSV:break;
@@ -202,10 +206,6 @@ int main (int argc, char ** argv){
         run_SSM(colorSpace, em_image_size, use_uniform_component, type_of_em,
                 maxEMsteps, current_mix_W, PI_i, dataEM, current_mix_Mu, current_mix_Cov, prior_mix_Mu,
                 prior_mix_Prec, use_prior_on_mixture, eps, Q_sum_large, mix_PI_i);
-
-//        printMat("current_mix_Mu[0] = ", current_mix_Mu[0]);
-//        printMat("current_mix_Mu[1] = ", current_mix_Mu[1]);
-//        printMat("current_mix_Mu[2] = ", current_mix_Mu[2]);
 
         std::vector <cv::Mat>PI_i_channels;
         cv::split(mix_PI_i, PI_i_channels);

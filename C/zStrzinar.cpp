@@ -141,15 +141,18 @@ void removeVectorElementsInt(const std::vector<int> &in, std::vector<int> &out, 
 
 void removeCirclebackY(std::vector<cv::Point> &contour) {
     // Removes points from vector
-    // Finds the first point that has a smaller y than it's predecessor and deletes it together with following points
+    // If a point has a smaller y coordinate than the previous max y coordinate we delete it.
     int i;
     unsigned long n = contour.size();
-    for (i = 0; i < n - 1; i++) {
-        if (contour[i + 1].y < contour[i].y) {
-            break;
+    float maxY = 0;
+    std::vector<cv::Point> contour_out;
+    for (i = 0; i < n ; i++) {
+        if (contour[i].y >= maxY) {
+            maxY = contour[i].y;
+            contour_out.push_back(contour[i]);
         }
     }
-    contour.erase(contour.begin()+i+1, contour.end());
+    contour = contour_out;
 }
 
 void firstLastIdx(cv::Mat input, int& firstIdx, int& lastIdx){

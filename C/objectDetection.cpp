@@ -21,8 +21,8 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
 
     cv::Size size_obj(areas.cols, areas.rows); // 50x50
     std::vector<float> scl; // scaling vector
-    scl.push_back((float)originalFrameSize.height/(float)size_obj.height); // razmerje višine med frame in 50x50
-    scl.push_back((float)originalFrameSize.width/(float)size_obj.width); // razmerje širine med frame in 50x50
+    scl.push_back((float)originalFrameSize.width/(float)size_obj.width); // razmerje višine med frame in 50x50
+    scl.push_back((float)originalFrameSize.height/(float)size_obj.height); // razmerje širine med frame in 50x50
     float Tt_data[4] = {scl[0],0.0,0.0,scl[1]}; // podatki za diagonalno matriko Tt
     cv::Mat Tt(2, 2, CV_32F,Tt_data); // Diagonalna matrika za skaliranje
 
@@ -74,15 +74,11 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
     vconcat(firstRow, T_diff, dT2);
     cv::compare(dT2, Mat::zeros(dT2.rows, dT2.cols, dT2.type()), dT2, CMP_NE);
     cv::bitwise_or(dT,dT2,dT); // dT zdaj govori ali je prišlo do spremembe ali po vrsticah ali po stolpcih.
-//    printMat("dT' ", dT);
-//    std::cout << std::endl;
-//    printMat("dT' ", dT);
-//    std::cout << std::endl;
+
     cv::Mat Data;
     bool everythingIsSea = cv::countNonZero(T) == (T.rows*T.cols); // ! (sum(T(:)) != numel(T))
     bool noChangesInSea = cv::countNonZero(dT) == 0; // ! (sum(dT(:)) != 0)
-//    printMat("dT' ", dT);
-//    std::cout << std::endl;
+
     if (not everythingIsSea && not noChangesInSea){ // (sum(T(:)) != numel(T)) && (sum(dT(:)) != 0)
         std::vector<Point> contour;
         extractTheLargestCurve(dT, contour);
@@ -102,7 +98,6 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
             contour[i].x = t0.y;
             contour[i].y = t0.x;
         }
-//        printMat("dT' ", dT);
 
         Data = cv::Mat(2,(int)contour.size(),CV_32F);
         // contour is in "50x50" coordinate system. We must transform to frame original coordinates! (using Tt scaling matrix)
@@ -220,7 +215,6 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
 
         objects.push_back(thisObject);
     }
-    suppressedObjects;
 
     suppressDetections(objects, suppressedObjects);
 
@@ -535,7 +529,6 @@ void mergeByProximity(cv::Mat& bbs_out, std::vector<object> objects, std::vector
     cv::Mat Covs;
     Covs = (bbs.colRange(2,3)+5);
     Covs = Covs.mul(Covs);
-
     //std::vector <int> selected_out;
     float mindist = 1;
     int counter = 1;
