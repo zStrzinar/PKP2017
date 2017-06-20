@@ -113,12 +113,15 @@ int main (int argc, char ** argv){
 
         switch (colorSpace){
             case YCRCB:{
-                cv::Mat Y,Cr,Cb; std::vector<cv::Mat> bgr,YCrCb;
-                cv::split(frame_resized, bgr);
-                Y = 0.0593*bgr[2]+(1-0.0593-0.2627)*bgr[1]+0.2627*bgr[1];
-                cv::cvtColor(frame_resized, frame_colorspace, CV_BGR2YCrCb);
-                std::cout << std::endl << std::endl << std::endl << Y << std::endl << std::endl << std::endl << std::endl;
-                //std::cout << std::endl << std::endl << std::endl << frame_colorspace << std::endl << std::endl << std::endl << std::endl;
+                myBGR2YCrCb(frame_resized, frame_colorspace);
+                // YCrCb2YCbCr (openCV2matlab=
+                std::vector<cv::Mat> YCrCb, YCbCr;
+                cv::split(frame_colorspace, YCrCb);
+                YCbCr.push_back(YCrCb[0]);
+                YCbCr.push_back(YCrCb[2]);
+                YCbCr.push_back(YCrCb[1]);
+                merge(YCbCr,frame_colorspace);
+
                 break;
             }
             case HSV:break;
@@ -134,10 +137,9 @@ int main (int argc, char ** argv){
         cv::split(frame_colorspace,color_data_rows); // color_date_rows[0] je zdaj prvi kanal frame_colorspace
         if (colorSpace == YCRCB){
                     cv::Mat temp;
-                    temp = color_data_rows[1].clone();
                     color_data_rows[0] = color_data_rows[0].reshape(0, 1).clone(); // color_data_rows[0] rata vrstična matrika. Prvih 50 vrednosti je iz prve vrstice originala, naslednih 50 je iz naslednje vrstice originala itd.
-                    color_data_rows[1] = color_data_rows[2].reshape(0, 1).clone();
-                    color_data_rows[2] = temp.reshape(0, 1).clone();
+                    color_data_rows[1] = color_data_rows[1].reshape(0, 1).clone();
+                    color_data_rows[2] = color_data_rows[2].reshape(0, 1).clone();
             }
         else{
             color_data_rows[0] = color_data_rows[0].reshape(0, 1).clone(); // color_data_rows[0] rata vrstična matrika. Prvih 50 vrednosti je iz prve vrstice originala, naslednih 50 je iz naslednje vrstice originala itd.
@@ -145,10 +147,10 @@ int main (int argc, char ** argv){
             color_data_rows[2] = color_data_rows[2].reshape(0, 1).clone();
         }
 
-        cv::Mat color_data;//(3,em_image_size[0]*em_image_size[1],CV_64F);
+        cv::Mat color_data;
         cv::vconcat(color_data_rows,3,color_data); // zlepim rows v color_data
         color_data.convertTo(color_data,CV_64F);
-        cv::Mat dataEM;//(5,em_image_size[0]*em_image_size[1],CV_64F);
+        cv::Mat dataEM;
 
         cv::vconcat(spatial_data,color_data,dataEM); // Zlepim skupaj color_data in spatial_data
         cv::Mat current_Mu[3], current_Cov[3], current_region;
@@ -207,6 +209,9 @@ int main (int argc, char ** argv){
                 maxEMsteps, current_mix_W, PI_i, dataEM, current_mix_Mu, current_mix_Cov, prior_mix_Mu,
                 prior_mix_Prec, use_prior_on_mixture, eps, Q_sum_large, mix_PI_i);
 
+//        printMat("current_mix_Cov[0] = ", current_mix_Cov[0]);
+//        printMat("current_mix_Cov[1] = ", current_mix_Cov[1]);
+//        printMat("current_mix_Cov[2] = ", current_mix_Cov[2]);
         std::vector <cv::Mat>PI_i_channels;
         cv::split(mix_PI_i, PI_i_channels);
 

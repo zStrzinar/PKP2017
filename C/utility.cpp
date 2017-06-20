@@ -116,8 +116,6 @@ void run_SSM(Colorspace colorSpace,
              cv::Mat &Q_sum_large,
              cv::Mat &mix_PI_i){
 
-    printMat("data.colRange(0,10) = ", data.colRange(0,10));
-
         double p_unknown = GetUnknownWeightForTheFeatureModel(colorSpace, sizeMask, use_uniform_component);
         bool use_gauss = false;
         int sizMix = (int)mix_w.size();
@@ -134,7 +132,6 @@ void run_SSM(Colorspace colorSpace,
         cv::Mat PI_i0 = PI_i.clone();
         int counter = maxEMsteps;
         cv::Mat p(sizMix+1,data.cols,CV_64F, 0.0);
-//        cv::Mat p = cv::Mat::zeros(sizMix+1, data.cols, CV_64F);
 
         //initialize empty precision matrix
         cv::Mat prec = cv::Mat();
@@ -267,7 +264,7 @@ void run_SSM(Colorspace colorSpace,
             int mid = (int)std::ceil(d_pi.rows/2);
             cv::Mat dpi = d_pi(cv::Range(mid,d_pi.rows),cv::Range::all());
             cv::Scalar loglik_new = cv::mean(dpi);
-            if (loglik_new.val[0] > 0.01) // 0.001
+            if (loglik_new.val[0] > 0.0005) // original: 0.01
             {
                 PI_i0 = PI_i;
             }
@@ -291,9 +288,7 @@ void run_SSM(Colorspace colorSpace,
             cv::Mat x_mu;
             cv::Mat x_2_mu;
             cv::Mat c;
-//            printMat("mix_Cov[0]", mix_Cov[0]); // TODO: bris!
-//            printMat("mix_Cov[1]", mix_Cov[1]); // TODO: bris!
-//            printMat("mix_Cov[2]", mix_Cov[2]); // TODO: bris!
+            // Na tej točki so matrike mix_Cov[] enake kot v Matlabu
             for (int k = 0; k < sizMix; k++)
             {
 
@@ -305,10 +300,14 @@ void run_SSM(Colorspace colorSpace,
 
                 cv::reduce(w_data, x_mu, 1, CV_REDUCE_SUM);
                 x_mu = x_mu/sum_pk;
+//                printMat("x_mu = ", x_mu); // TODO: brisi!
                 x_2_mu = (data*w_data.t())/sum_pk ;
+//                printMat("x_2_mu = ", x_2_mu);// TODO: brisi!
                 c = x_2_mu - x_mu*x_mu.t();
+//                printMat("c = ", c);// TODO: brisi!
                 // naive update of mean and covariance
                 mix_Cov[k] = c.clone();
+//                printMat("mix_Cov[k] = ", mix_Cov[k]); // TODO: brisi!
                 x_mu.copyTo(mix_Mu[k]);
                 mix_w[k].at<double>(0) = alpha_i.at<double>(0,k);
                 cv::Mat res;
@@ -323,10 +322,10 @@ void run_SSM(Colorspace colorSpace,
                     res.copyTo(mix_Mu[i_c_d]);
                 }
             }
-//            printMat("mix_Cov[0]", mix_Cov[0]); // TODO: bris!
-//            printMat("mix_Cov[1]", mix_Cov[1]); // TODO: bris!
-//            printMat("mix_Cov[2]", mix_Cov[2]); // TODO: bris!
-
+            // Na tej točki je ujemanje matrik mix_Cov[] z Matlabom že dosti slabše
+//            printMat("mixCov[0] = ", mix_Cov[0]); // TODO: brisi!
+//            printMat("mixCov[1] = ", mix_Cov[1]); // TODO: brisi!
+//            printMat("mixCov[2] = ", mix_Cov[2]); // TODO: brisi!
             cv::Mat mix_w_sum_mat(1,1,CV_64F,Scalar(0));
             double mix_w_sum;
             int i;

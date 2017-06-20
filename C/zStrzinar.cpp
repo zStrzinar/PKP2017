@@ -167,3 +167,16 @@ void firstLastIdx(cv::Mat input, int& firstIdx, int& lastIdx){
         }
     }
 }
+
+void myBGR2YCrCb(cv::Mat BGR, cv::Mat& YCrCb){
+    //assert(BGR.type() == CV_8U);
+
+    std::vector<cv::Mat> BGR_channels, YCrCb_channels;
+    split(BGR,BGR_channels);
+
+    YCrCb_channels.push_back(16 + BGR_channels[2]*65.738/256 + BGR_channels[1]*129.057/256 + BGR_channels[0]*25.064/256);
+    YCrCb_channels.push_back(128 + BGR_channels[2]*112.439/256 - BGR_channels[1]*94.154/256 - BGR_channels[0]*18.285/256);
+    YCrCb_channels.push_back(128 - BGR_channels[2]*37.945/256 - BGR_channels[1]*74.494/256 + BGR_channels[0]*112.439/256);
+
+    cv::merge(YCrCb_channels,YCrCb);
+}

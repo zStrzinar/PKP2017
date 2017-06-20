@@ -21,4 +21,5 @@ void removeVectorElements(const std::vector<T> &in, std::vector<T> &out, std::ve
 void removeVectorElementsInt(const std::vector<int> &in, std::vector<int> &out, std::vector<bool> deleteVector);
 void removeCirclebackY(std::vector<cv::Point> &contour);
 void firstLastIdx(cv::Mat input, int& firstIdx, int& lastIdx);
+void myBGR2YCrCb(cv::Mat BGR, cv::Mat& YCrCb);
 #endif //PKP2017_ZSTRZINAR_H
