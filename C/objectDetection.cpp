@@ -147,64 +147,53 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
     int i;
 //    std::vector<std::vector <int> > boundingBoxes; std::vector<float> box_areas;
     for (i=0; i<CC.size(); i++){
-        // find bounding box in 50x50 image
-        int col, row;
-        int col_min = -1, col_max=-1, row_min=-1, row_max=-1;
-        cv::Mat colsSum, rowsSum;
-        cv::reduce(CC[i], colsSum, REDUCE_TO_ROW, CV_REDUCE_SUM, CV_32F); // reduce lahko vrne samo 32S, 32F ali 64F
-        cv::reduce(CC[i], rowsSum, REDUCE_TO_COL, CV_REDUCE_SUM, CV_32F);
-        // TODO: spremeni tip matrik CC[] v CV_8U
-        colsSum.convertTo(colsSum,CV_8U);
-        firstLastIdx(colsSum,col_min,col_max);
+        std::vector<int> pixels = CC2pixels(CC[i]);
+        std::vector<int> x,y;
+        ind2sub(Size(50,50),pixels, x,y);
 
-        rowsSum.convertTo(rowsSum,CV_8U);
-        firstLastIdx(rowsSum,row_min,row_max);
-        row_max++; col_max++; // da dosežemo ujemanje z matlabom
-        float height, width;
-        height = row_max-row_min;
-        width = col_max-col_min;
+        int xmin,ymin,xmax,ymax,ymin_original;
+        xmin = *min_element(x.begin(), x.end());
+        ymin = *min_element(y.begin(), y.end()); ymin_original=ymin;
+        xmax = *max_element(x.begin(), x.end());
+        ymax = *max_element(y.begin(), y.end());
 
-        // rescale bounding box with values from Tt
-        row_min*=Tt.at<float>(0,0); // row == y
-        col_min*=Tt.at<float>(1,1); // col == x
-        width*=Tt.at<float>(0,0);
-        height*=Tt.at<float>(1,1);
+        int width, height;
+        xmax++;ymax++;
+        width = xmax-xmin;
+        height = ymax-ymin;
 
-        // Make a boundingBox object - a vector!
+        xmin*=(int)Tt.at<float>(0,0);
+        ymin*=(int)Tt.at<float>(1,1);
+        width*=(int)Tt.at<float>(0,0);
+        height*=(int)Tt.at<float>(1,1);
         std::vector <float> boundingBox;
-        boundingBox.push_back((float)col_min); // TODO: mogoče sta row_min in col_min zamešana
-        boundingBox.push_back((float)row_min);
-        boundingBox.push_back(width);
-        boundingBox.push_back(height);
+
+        boundingBox.push_back((float)xmin);
+        boundingBox.push_back((float)ymin);
+        boundingBox.push_back((float)width);
+        boundingBox.push_back((float)height);
 
         float area = width*height;
-
-        // To je zdaj samo za preverjanje ali naj bounding box dodamo na seznam (v vektor)?
-        // Poiščemo piksel ki ima po y najmanjšo koordinato. (Poiščemo x in y koordinati v 50x50)
-        // Potem transformiamo v 860x640
-        col_min/=Tt.at<float>(0,0); // ker smo piksel ki ima po y najmanjšo koordinato že poiskali gor - zdaj ga moramo samo transformirati iz 860x640 v 50x50 - to je isto kot ymin v [ymin,loc]=min(y(:)) v matlabu
-        // TODO: ali je tukaj namen da najdemo koordinato zgoraj levo??? za bounding box al kaj...
-        // Tole zdaj poišče prvo vrstico, ki ima v stolpcu col_min vrednost različno od 0.
-
-        for (row=0; row<CC[i].rows; row++){
-            if(CC[i].at<char>(row,col_min)){
-                row_min = row;
-                break;
-            }
-        }
-        col_min++; row_min++;
-        float row_min_f,col_min_f;
-        col_min_f=col_min*Tt.at<float>(0,0); // skaliranje
-        row_min_f=row_min*Tt.at<float>(1,1);
+        int loc = 0;
+        while(y[loc]!=ymin_original) loc++;
+        xmin = x[loc]*(int)Tt.at<float>(1,1);
 
         cv::Mat temp;
-        temp = abs(xy_subset.row(0)-col_min_f); // ???
-        cv::Point loc;
-        cv::minMaxLoc(temp, NULL, NULL, &loc, NULL); // find min. locations
-        cv::Mat boundry;
-        boundry = xy_subset.col(loc.x);
+        temp = xy_subset.row(0).clone();
+        temp.convertTo(temp,CV_32F);
+        std::vector <float> temp2;
+        int j;
+        for(j=0;j<temp.cols;j++){
+            temp2.push_back(abs(temp.at<float>(j)-xmin));
+        }
+        float temp2_min;
+        temp2_min = *min_element(temp2.begin(), temp2.end());
+        loc=0;
+        while(temp2[loc]!=temp2_min) loc++;
 
-        if (boundry.at<float>(1,0)>row_min_f){ // TODO: tukaj spet preveri kaj pomenita 0,1 ??
+        cv::Mat boundary = xy_subset.col(loc);
+
+        if (boundary.at<float>(1)>ymin){
             continue;
         }
 
@@ -214,9 +203,82 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
         thisObject.area = area;
 
         objects.push_back(thisObject);
+
+//        // find bounding box in 50x50 image
+//        int col, row;
+//        int col_min = -1, col_max=-1, row_min=-1, row_max=-1;
+//        cv::Mat colsSum, rowsSum;
+//        cv::reduce(CC[i], colsSum, REDUCE_TO_ROW, CV_REDUCE_SUM, CV_32F); // reduce lahko vrne samo 32S, 32F ali 64F
+//        cv::reduce(CC[i], rowsSum, REDUCE_TO_COL, CV_REDUCE_SUM, CV_32F);
+//        // TODO: spremeni tip matrik CC[] v CV_8U
+//        colsSum.convertTo(colsSum,CV_8U);
+//        firstLastIdx(colsSum,col_min,col_max);
+//
+//        rowsSum.convertTo(rowsSum,CV_8U);
+//        firstLastIdx(rowsSum,row_min,row_max);
+//        row_max++; col_max++; // da dosežemo ujemanje z matlabom
+//        float height, width;
+//        height = row_max-row_min;
+//        width = col_max-col_min;
+//
+//        // rescale bounding box with values from Tt
+//        row_min*=Tt.at<float>(0,0); // row == y
+//        col_min*=Tt.at<float>(1,1); // col == x
+//        width*=Tt.at<float>(0,0);
+//        height*=Tt.at<float>(1,1);
+//
+//        // Make a boundingBox object - a vector!
+//        std::vector <float> boundingBox;
+//        boundingBox.push_back((float)col_min); // TODO: mogoče sta row_min in col_min zamešana
+//        boundingBox.push_back((float)row_min);
+//        boundingBox.push_back(width);
+//        boundingBox.push_back(height);
+//
+//        float area = width*height;
+//
+//        // To je zdaj samo za preverjanje ali naj bounding box dodamo na seznam (v vektor)?
+//        // Poiščemo piksel ki ima po y najmanjšo koordinato. (Poiščemo x in y koordinati v 50x50)
+//        // Potem transformiamo v 860x640
+//        col_min/=Tt.at<float>(0,0); // ker smo piksel ki ima po y najmanjšo koordinato že poiskali gor - zdaj ga moramo samo transformirati iz 860x640 v 50x50 - to je isto kot ymin v [ymin,loc]=min(y(:)) v matlabu
+//        // TODO: ali je tukaj namen da najdemo koordinato zgoraj levo??? za bounding box al kaj...
+//        // Tole zdaj poišče prvo vrstico, ki ima v stolpcu col_min vrednost različno od 0.
+//
+//        for (row=0; row<CC[i].rows; row++){
+//            if(CC[i].at<char>(row,col_min)){
+//                row_min = row;
+//                break;
+//            }
+//        }
+//        col_min++; row_min++;
+//        float row_min_f,col_min_f;
+//        col_min_f=col_min*Tt.at<float>(0,0); // skaliranje
+//        row_min_f=row_min*Tt.at<float>(1,1);
+//
+//        cv::Mat temp;
+//        temp = abs(xy_subset.row(0)-col_min_f); // ???
+//        cv::Point loc;
+//        cv::minMaxLoc(temp, NULL, NULL, &loc, NULL); // find min. locations
+//        cv::Mat boundry;
+//        boundry = xy_subset.col(loc.x);
+//        printMat("boundry = ", boundry);
+//        std::cout << row_min_f << std::endl;
+//        if (boundry.at<float>(1,0)>row_min_f){ // TODO: tukaj spet preveri kaj pomenita 0,1 ??
+//            continue;
+//        }
+//
+//        // objekt je prestal test, dodajmo ga v vektor
+//        object thisObject;
+//        thisObject.bounding_box = boundingBox;
+//        thisObject.area = area;
+//
+//        objects.push_back(thisObject);
     }
 
     suppressDetections(objects, suppressedObjects);
+
+    if (objects.size() != suppressedObjects.size()) {
+        std::cout << "size() = " << objects.size() << ", " << suppressedObjects.size() << std::endl;
+    }
 
     return;
 }
@@ -426,7 +488,6 @@ std::vector <cv::Mat> extractBlobs(cv::Mat bw){
     cv::hconcat(src,empty_col,src);
     cv::vconcat(empty_row,src,src);
     cv::vconcat(src,empty_row,src);
-
     // src is binary image (CV_8U) - 0 is background, 255 are objects
     // dst is binary image (CV_8U) of only the largest blob in src
     if (src.type()!=CV_8U) {
@@ -441,7 +502,7 @@ std::vector <cv::Mat> extractBlobs(cv::Mat bw){
     int idx = 0;
     for( ; idx >= 0; idx = hierarchy[idx][0] )
     {
-        cv::Mat currentBlob(src.rows,src.cols,CV_8U);
+        cv::Mat currentBlob(src.rows,src.cols,CV_8U,Scalar(0));
         Scalar color( 255, 255, 255 );
         drawContours(currentBlob,contours,idx,color, CV_FILLED, 8, hierarchy);
         currentBlob = currentBlob.rowRange(1,currentBlob.rows-1).colRange(1,currentBlob.cols-1).clone(); // obrezemo dodane stolpce (prvi in zadnji) in vrstice (prva in zadnja)
@@ -511,9 +572,9 @@ void mergeByProximity(cv::Mat& bbs_out, std::vector<object> objects, std::vector
 
     // iz objects[___].bounding_box v matriko bounding boxov (bbs)
     // Vsaka vrstica naj bo bounding box enega objekta
-    cv::Mat bbs(nObjects_in, (int) orderedObjects[0].bounding_box.size(),CV_32F);
-    for (i=0; i<nObjects_in; i++){
-        bbs.row(i) = cv::Mat(orderedObjects[i].bounding_box).t();
+    cv::Mat bbs((int) orderedObjects.size(), (int) orderedObjects[0].bounding_box.size(),CV_32F);
+    for (i=0; i<orderedObjects.size(); i++){
+        bbs.row(i) = cv::Mat(orderedObjects[i].bounding_box, true).t();
     }
 
     // Mu = bbs(:,1:2) + (bbs(:,3:4),2)/2);
@@ -527,7 +588,7 @@ void mergeByProximity(cv::Mat& bbs_out, std::vector<object> objects, std::vector
 
     // Covs = (bbs(:,3:4)*1+5).^2;
     cv::Mat Covs;
-    Covs = (bbs.colRange(2,3)+5);
+    Covs = (bbs.colRange(2,4)+5);
     Covs = Covs.mul(Covs);
     //std::vector <int> selected_out;
     float mindist = 1;
@@ -536,7 +597,8 @@ void mergeByProximity(cv::Mat& bbs_out, std::vector<object> objects, std::vector
         std::vector <float> ratios;
         cv::Mat C1,C2,C;
         Covs.row(0).copyTo(C1);
-        for (i=0; i<nObjects_in; i++){
+
+        for (i=0; i<Covs.rows; i++){
             Covs.row(i).copyTo(C2);
             C = C1+C2;
             cv::Mat temp, temp2, temp3;
@@ -549,14 +611,24 @@ void mergeByProximity(cv::Mat& bbs_out, std::vector<object> objects, std::vector
 
         // id_remove = (ratios <= mindist)
         std::vector <bool> id_remove;
-        for (i=0; i<nObjects_in; i++){
+        for (i=0; i<ratios.size(); i++){
             id_remove.push_back(ratios[i]<=mindist);
         }
 
         // bbs_out(counter,:) = suppress_detections(bbs,Mu,id_remove)
         cv::Mat bbs_temp;
         suppress_detections(bbs, Mu, id_remove, bbs_temp);
-        bbs_temp.copyTo(bbs_out.row(counter));
+        printMat("bbs = ", bbs);
+        printMat("bbs_out = ", bbs_out);
+        printMat("bbs_temp = ", bbs_temp);
+        if (!bbs_out.empty())
+            cv::vconcat(bbs_out,bbs_temp,bbs_out);
+        else
+            bbs_out = bbs_temp.clone();
+
+        printMat("bbs_out = ", bbs_out);
+
+//        bbs_temp.copyTo(bbs_out.row(counter));
 
         // selected_out(counter).idx = ordr(id_remove);
         std::vector <int> temp;
@@ -579,15 +651,14 @@ void mergeByProximity(cv::Mat& bbs_out, std::vector<object> objects, std::vector
 
         counter++;
     }
-
-
     return;
 }
 
 void suppress_detections(cv::Mat bbs_in, cv::Mat Mu_in, std::vector<bool> selected, cv::Mat &bbs_out){
     // bbs = bbs_in(selected,:); Mu = Mu_in(selected,:);
-    int i, n = 0;
-    cv::Mat bbs, Mu;
+    int i, n = 0, n_selected = 0;
+    for (i=0;i<selected.size();i++) n_selected++;
+    cv::Mat bbs(n_selected,bbs_in.cols,bbs_in.type()), Mu(n_selected,Mu_in.cols,bbs_in.type());
     for (i=0; i<selected.size(); i++){
         if(selected[i]){
             bbs_in.row(i).copyTo(bbs.row(n));
@@ -614,4 +685,31 @@ void suppress_detections(cv::Mat bbs_in, cv::Mat Mu_in, std::vector<bool> select
     bbs_out_vector.push_back(maxY.at<float>(0) - minY.at<float>(0));
 
     bbs_out = cv::Mat(bbs_out_vector,CV_32F).t(); // vector to matrix
+}
+
+std::vector<int> CC2pixels(cv::Mat CC){
+    cv::Mat formated;
+    CC.convertTo(formated, CV_64F);
+
+    std::vector<int> out;
+    int r,c;
+    for (c=0; c<formated.cols; c++){
+        for (r=0; r<formated.rows; r++){
+            if(formated.row(r).col(c).at<double>(0)){
+                out.push_back(r + c*formated.rows);
+            }
+        }
+    }
+
+    return out;
+}
+
+void ind2sub(cv::Size sz, std::vector<int> ind, std::vector<int> &x, std::vector<int> &y){
+    int i,r,c;
+    for (i=0;i<ind.size();i++){
+        c = ind[i]/(int)sz.width; // celoštevilsko deljenje ker sta oba integerja!
+        r = ind[i] % sz.height;
+        assert(r == (ind[i]-c*sz.height));
+        x.push_back(c); y.push_back(r);
+    }
 }

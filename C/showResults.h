@@ -43,5 +43,6 @@ void displayEdgeAndObjects2( const cv::Mat &srcImg,
 cv::RotatedRect getErrorEllipse(double chisquare_val, cv::Point2f mean, cv::Mat covmat);
 
 void drawEdge(cv::Mat &Img, std::vector<cv::Point> edge, cv::Scalar color, int width);
+void drawObjects(cv::Mat Image_plus, std::vector<object> objects);
 
 #endif //PKP2017_SHOWRESULTS_H

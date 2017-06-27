@@ -94,17 +94,13 @@ void displayEdgeAndObjects1( const cv::Mat &srcImg,
             contour.push_back(point);
         }
         contours.push_back(contour);
-//        for(i=0;i<contour.size();i++){
-//            std::cout << contour[i].x << "," << contour[i].y << std::endl;
-//        }
         cv::Scalar color(0,255,0); // green
         drawEdge(Image_plus, contour, color,2);
-//        std::cout << "Added line!" << std::endl;
     }
-
+    drawObjects(Image_plus, objects);
     namedWindow("Results",CV_WINDOW_AUTOSIZE);
     cv::imshow("Results",Image_plus);
-    waitKey(1);
+//    waitKey(1);
 }
 
 cv::RotatedRect getErrorEllipse(double chisquare_val, cv::Point2f mean, cv::Mat covmat){
@@ -140,5 +136,27 @@ void drawEdge(cv::Mat &Img, std::vector<cv::Point> edge, cv::Scalar color, int w
         line(Img, edge[i], edge[i+1],color,width);
     }
 
+    return;
+}
+
+void drawObjects(cv::Mat Image_plus, std::vector<object> objects){
+    int i;
+    for (i=0; i<objects.size(); i++){
+        object current = objects[i];
+        std::cout << "current.bounding_box[0] = " << current.bounding_box[0] << std::endl;
+        std::cout << "current.bounding_box[1] = " << current.bounding_box[1] << std::endl;
+        std::cout << "current.bounding_box[2] = " << current.bounding_box[2] << std::endl;
+        std::cout << "current.bounding_box[3] = " << current.bounding_box[3] << std::endl;
+
+        cv::Rect bbx((int)current.bounding_box[0],
+                     (int)current.bounding_box[1],
+                     (int)current.bounding_box[2],
+                     (int)current.bounding_box[3]);
+
+        cv::Scalar color(255,0,0);
+        cv::rectangle(Image_plus,bbx, color, 2, 8);
+
+        imshow("zadnja ovira", Image_plus);
+    }
     return;
 }

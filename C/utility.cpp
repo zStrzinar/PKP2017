@@ -214,7 +214,6 @@ void run_SSM(Colorspace colorSpace,
 
             cv::Mat Q_i;
             cv::filter2D(P_i, Q_i, P_i.depth(), H_0,cv::Point(-1,-1), 0.0,cv::BORDER_REPLICATE);
-            //std::cout << std::endl << "Q_i: " << Q_i << std::endl; // TODO: samo za debugiranje
             Q_i = P_i.mul(Q_i);
             //prepare the input for bsxfun
             rows = Q_i.rows;
@@ -222,7 +221,6 @@ void run_SSM(Colorspace colorSpace,
             cv::reduce(bsxParam, bsxParam, 1, CV_REDUCE_SUM);
             bsxParam = bsxParam.reshape(1,rows);
             Q_i = Bsxfun(Q_i, bsxParam);
-            //std::cout << std::endl << "Q_i: " << Q_i << std::endl; // TODO: samo za debugiranje
             cv::Mat S_sum;
             cv::flip(H_1,H_1, -1);//switch order in both axes
             cv::filter2D(Q_i, Q_sum, Q_i.depth(), H_1,cv::Point(-1,-1), 0.0,cv::BORDER_REPLICATE);
@@ -244,9 +242,7 @@ void run_SSM(Colorspace colorSpace,
 
             cv::Mat Q_sumT;
             Q_sumT = Q_sum.t(); // prej je bilo tukaj Q_sum = Q_sum.t(); ???
-            //std::cout << Q_sumT.colRange(0,5).rowRange(0,5) << std::endl;
             p = Q_sumT.reshape(1,sizeMask.area()).t(); // Q_sumT prej sploh ni bil inicializiran!
-            //std::cout << p << std::endl;
 
             //measure the change in posterior distribution
             cv::Mat d_pi, tmpMat, tmpMat2;
@@ -264,7 +260,7 @@ void run_SSM(Colorspace colorSpace,
             int mid = (int)std::ceil(d_pi.rows/2);
             cv::Mat dpi = d_pi(cv::Range(mid,d_pi.rows),cv::Range::all());
             cv::Scalar loglik_new = cv::mean(dpi);
-            if (loglik_new.val[0] > 0.0005) // original: 0.01
+            if (loglik_new.val[0] > 0.0008) // original: 0.01
             {
                 PI_i0 = PI_i;
             }
@@ -300,14 +296,10 @@ void run_SSM(Colorspace colorSpace,
 
                 cv::reduce(w_data, x_mu, 1, CV_REDUCE_SUM);
                 x_mu = x_mu/sum_pk;
-//                printMat("x_mu = ", x_mu); // TODO: brisi!
                 x_2_mu = (data*w_data.t())/sum_pk ;
-//                printMat("x_2_mu = ", x_2_mu);// TODO: brisi!
                 c = x_2_mu - x_mu*x_mu.t();
-//                printMat("c = ", c);// TODO: brisi!
                 // naive update of mean and covariance
                 mix_Cov[k] = c.clone();
-//                printMat("mix_Cov[k] = ", mix_Cov[k]); // TODO: brisi!
                 x_mu.copyTo(mix_Mu[k]);
                 mix_w[k].at<double>(0) = alpha_i.at<double>(0,k);
                 cv::Mat res;
@@ -354,11 +346,6 @@ void run_SSM(Colorspace colorSpace,
         {
             //TODO: log.warn("The EM did not converge in %d iterations",maxEMsteps);
         }
-
-//    }catch(cv::Exception& ex){
-//        const char* err_msg = ex.what();
-//        std::cout << "exception caught: " << err_msg << std::endl;
-//    }
 }
 
 double prod(cv::Mat mat){

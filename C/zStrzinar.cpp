@@ -31,7 +31,19 @@ void removeRow(const cv::Mat &in, cv::Mat &out, int index){
     if(index>=0 && index < in.rows) {
         up = in.rowRange(0, index);
         down = in.rowRange(index + 1, in.rows);
-        cv::hconcat(up, down, out);
+        if (!up.empty() && !down.empty()) {
+            cv::hconcat(up, down, out);
+        }
+        else if(up.empty() && down.empty()) {
+            out = cv::Mat(0, in.cols, in.type());
+        }
+        else if (up.empty() && !down.empty()){
+            out = down.clone();
+        }
+        else if(down.empty() && !up.empty()){
+            out = up.clone();
+        }
+
     }
     else{
         std::cerr << "Index out of bounds! Index is " << index << " in.rows is " << in.rows << std::endl;

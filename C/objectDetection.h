@@ -33,4 +33,7 @@ void pruneobjs(const cv::Mat &bbs, std::vector<std::vector <int> > selected, std
 void mergeByProximity(cv::Mat& bbs_out, std::vector<object> bbs, std::vector<std::vector <int> >& selected_out);
 
 void suppress_detections(cv::Mat bbs_in, cv::Mat Mu_in, std::vector<bool> selected, cv::Mat &bbs_out);
+
+std::vector<int> CC2pixels(cv::Mat CC);
+void ind2sub(cv::Size sz, std::vector<int> ind, std::vector<int> &x, std::vector<int> &y);
 #endif //PKP2017_OBJECTDETECTION_H
