@@ -32,7 +32,7 @@ void removeRow(const cv::Mat &in, cv::Mat &out, int index){
         up = in.rowRange(0, index);
         down = in.rowRange(index + 1, in.rows);
         if (!up.empty() && !down.empty()) {
-            cv::hconcat(up, down, out);
+            cv::vconcat(up, down, out);
         }
         else if(up.empty() && down.empty()) {
             out = cv::Mat(0, in.cols, in.type());
@@ -135,6 +135,7 @@ void removeVectorElements(const std::vector<T> &in, std::vector<T> &out, std::ve
             output.push_back(in[i]);
         }
     }
+    output = out;
 }
 
 void removeVectorElementsInt(const std::vector<int> &in, std::vector<int> &out, std::vector<bool> deleteVector){
@@ -149,6 +150,7 @@ void removeVectorElementsInt(const std::vector<int> &in, std::vector<int> &out, 
             output.push_back(in[i]);
         }
     }
+    out = output;
 }
 
 void removeCirclebackY(std::vector<cv::Point> &contour) {
@@ -191,4 +193,20 @@ void myBGR2YCrCb(cv::Mat BGR, cv::Mat& YCrCb){
     YCrCb_channels.push_back(128 - BGR_channels[2]*37.945/256 - BGR_channels[1]*74.494/256 + BGR_channels[0]*112.439/256);
 
     cv::merge(YCrCb_channels,YCrCb);
+}
+
+//void myMinMaxValIdx(areas,&minVal,&maxVal,&minIdx,&maxIdx){
+void myMinMaxValIdx(std::vector<float> a, float &minVal, float &maxVal, int &minIdx,int &maxIdx){
+    int i;
+    minVal = a[0]; maxVal=a[0]; minIdx = 0; maxIdx = 0;
+    for (i=1; i<a.size(); i++){
+        if (a[i]<minVal){
+            minVal = a[i];
+            minIdx = i;
+            }
+        if (a[i]>maxVal){
+            maxVal = a[i];
+            maxIdx = i;
+        }
+    }
 }

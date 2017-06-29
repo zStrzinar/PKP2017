@@ -104,6 +104,9 @@ int main (int argc, char ** argv){
     cv::Size resized_size(em_image_size.width,em_image_size.height);
     cv::Size original_size;
     for(frame_number = 1; frame_number<=inputVideo.get(CV_CAP_PROP_FRAME_COUNT); frame_number++){
+        if (frame_number == 133)
+            std::cout << "Tukaj!" << std::endl;
+
         inputVideo.set(CV_CAP_PROP_POS_FRAMES, frame_number-1);
         inputVideo >> frame_original;
 

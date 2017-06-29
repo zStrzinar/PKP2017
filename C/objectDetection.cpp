@@ -597,12 +597,13 @@ void mergeByProximity(cv::Mat& bbs_out, std::vector<object> objects, std::vector
     std::vector <object> orderedObjects; // urejeni od največje površine do najmanjše
     std::vector <int> order; // kako smo jih premešali?
     // order TODO: preveri a to dobro deluje?
-    double minVal,maxVal; int minIdx,maxIdx;
-    for (i=0; i<nObjects_in; i++) {
-        minMaxIdx(areas,&minVal, &maxVal, &minIdx, &maxIdx);
+    float minVal,maxVal; int minIdx,maxIdx;
+    int j;
+    for (j=0; j<nObjects_in; j++) {
+        myMinMaxValIdx(areas,minVal,maxVal,minIdx,maxIdx);
         orderedObjects.push_back(objects[maxIdx]);
         order.push_back(maxIdx);
-        areas[maxIdx] = areas[minIdx]/2;
+        areas[maxIdx] = minVal/2;
     }
 
     // iz objects[___].bounding_box v matriko bounding boxov (bbs)
@@ -628,12 +629,13 @@ void mergeByProximity(cv::Mat& bbs_out, std::vector<object> objects, std::vector
     //std::vector <int> selected_out;
     float mindist = 1;
     int counter = 1;
+
     while (true) {
         std::vector <float> ratios;
         cv::Mat C1,C2,C;
         Covs.row(0).copyTo(C1);
 
-        for (i=0; i<Covs.rows; i++){
+        for (i=0; i<bbs.rows; i++){
             Covs.row(i).copyTo(C2);
             C = C1+C2;
             cv::Mat temp, temp2, temp3;

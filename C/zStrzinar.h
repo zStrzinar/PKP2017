@@ -22,4 +22,5 @@ void removeVectorElementsInt(const std::vector<int> &in, std::vector<int> &out, 
 void removeCirclebackY(std::vector<cv::Point> &contour);
 void firstLastIdx(cv::Mat input, int& firstIdx, int& lastIdx);
 void myBGR2YCrCb(cv::Mat BGR, cv::Mat& YCrCb);
+void myMinMaxValIdx(std::vector<float> a,float &minVal, float &maxVal, int &minIdx,int &maxIdx);
 #endif //PKP2017_ZSTRZINAR_H
