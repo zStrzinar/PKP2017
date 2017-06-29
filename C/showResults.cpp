@@ -142,6 +142,9 @@ void drawEdge(cv::Mat &Img, std::vector<cv::Point> edge, cv::Scalar color, int w
 
 void drawObjects(cv::Mat Image_plus, std::vector<object> objects){
     int i;
+
+    if(objects.size()>1)
+        std::cout << "Vec kot en objekt za prikazat!" << std::endl;
     for (i=0; i<objects.size(); i++){
         object current = objects[i];
 //        std::cout << "current.bounding_box[0] = " << current.bounding_box[0] << std::endl;

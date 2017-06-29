@@ -308,9 +308,11 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
 
     suppressDetections(objects, suppressedObjects);
 
-    if (objects.size() != suppressedObjects.size()) {
-        std::cout << "size() = " << objects.size() << ", " << suppressedObjects.size() << std::endl;
-    }
+//    suppressedObjects = objects;
+
+//    if (objects.size() != suppressedObjects.size()) {
+//        std::cout << "size() = " << objects.size() << ", " << suppressedObjects.size() << std::endl;
+//    }
 
     return;
 }
