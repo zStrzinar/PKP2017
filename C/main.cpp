@@ -75,6 +75,11 @@ int main (int argc, char ** argv){
     else
         std::cout << "Video file successfully opened" << endl;
 
+    cv::VideoWriter outputVideo;
+    int ex = static_cast<int>(inputVideo.get(CV_CAP_PROP_FOURCC));
+    Size S = Size((int) inputVideo.get(CV_CAP_PROP_FRAME_WIDTH),    // Acquire input size
+                  (int) inputVideo.get(CV_CAP_PROP_FRAME_HEIGHT));
+    outputVideo.open(outputPath,ex, inputVideo.get(CV_CAP_PROP_FPS), S, true);
     // Settings
     long double eps = 2.2204e-16;
     bool use_prior_on_mixture = true; // MATLAB: example.m:39 % detector constructor
@@ -84,8 +89,9 @@ int main (int argc, char ** argv){
     cv::Mat PI_i = cv::Mat(); // MATLAB: example.m:39 % detector constructor
     std::vector<cv::Mat> current_mix_Mu, current_mix_Cov, current_mix_W, current_mix_Prec;
     std::vector<cv::Mat> prior_mix_Mu, prior_mix_Cov, prior_mix_W, prior_mix_Prec;
-    loadPriorModelFromDisk(colorSpace, prior_mix_Mu, prior_mix_Cov, prior_mix_W, prior_mix_Prec); // hardcoded values
+//    loadPriorModelFromDisk(colorSpace, prior_mix_Mu, prior_mix_Cov, prior_mix_W, prior_mix_Prec); // hardcoded values
     cv::Size em_image_size(50,50);
+//    cv::Size em_image_size(100,100);
     cv::Mat spatial_data; getSpacialData(em_image_size, spatial_data);
     std::string type_of_em = "em_seg"; // em_basic em_seg em_basic_no_smooth
     std::cout << "Detector initialized" << std::endl;
@@ -97,16 +103,15 @@ int main (int argc, char ** argv){
     cv::Mat color_data_rows[3];
     cv::Size resized_size(em_image_size.width,em_image_size.height);
     cv::Size original_size;
-    cv::namedWindow("Moje okno",WINDOW_AUTOSIZE);
     for(frame_number = 1; frame_number<=inputVideo.get(CV_CAP_PROP_FRAME_COUNT); frame_number++){
         inputVideo.set(CV_CAP_PROP_POS_FRAMES, frame_number-1);
         inputVideo >> frame_original;
 
         char currentFile[17];
-        sprintf(currentFile, "images/%05d.jpg",frame_number);
+        //sprintf(currentFile, "images/%05d.jpg",frame_number);
 
-        std::cout << currentFile << std::endl;
-        frame_original = imread(currentFile, CV_LOAD_IMAGE_COLOR); // TODO: to je samo za debugiranje!
+        //std::cout << currentFile << std::endl;
+        //frame_original = imread(currentFile, CV_LOAD_IMAGE_COLOR); // TODO: to je samo za debugiranje!
         original_size = frame_original.size();
 
         cv::resize(frame_original,frame_resized,resized_size,0.5,0.5,INTER_LINEAR);
@@ -154,20 +159,27 @@ int main (int argc, char ** argv){
 
         cv::vconcat(spatial_data,color_data,dataEM); // Zlepim skupaj color_data in spatial_data
         cv::Mat current_Mu[3], current_Cov[3], current_region;
-        if (frame_number==1){
-            float df[] = {0,0.3,0.5,1}; // to so rocno nastavljene zacetne meje med območji
+//        if (frame_number==1){
+        if (!((frame_number-1)%30)){
+            loadPriorModelFromDisk(colorSpace, prior_mix_Mu, prior_mix_Cov, prior_mix_W, prior_mix_Prec); // hardcoded values
+//            float df[] = {0,0.3,0.5,1}; // to so rocno nastavljene zacetne meje med območji
+            float df[] = {0,0.2,0.6,1}; // to so rocno nastavljene zacetne meje med območji
             std::vector <float> vertical_ratio(df, df+sizeof(df)/sizeof(float) ); // to samo ustvari vektor in ga zafila z vrednostmi df[]
             std::transform(vertical_ratio.begin(), vertical_ratio.end(), vertical_ratio.begin(),
                            std::bind1st(std::multiplies<float>(),dataEM.cols)); // to pomnoži vektor z dataEM.cols
             // oboje skupaj je v matlabu: vertical_ratio = df*size(dataEM,2)
 
             int k;
+            if (current_mix_W.size()>0) current_mix_W.clear();
+            if (current_mix_Cov.size()>0) current_mix_Cov.clear();
+            if (current_mix_Mu.size()>0) current_mix_Mu.clear();
             for (k=0; k<=2; k++){ // cez vse regije:
                 current_region = dataEM.colRange((int)vertical_ratio[k],(int)vertical_ratio[k+1]); // v dataEM so vse lokaije kar po vrsti v vrstici
                 // TODO: ali je tukaj (eno vrstico gor) pravilen range? vključenost prvega in zadnjega stolpca v primerjavi z Matlabom?
 
-                cv::calcCovarMatrix(current_region, current_Cov[k], current_Mu[k], CV_COVAR_NORMAL|CV_COVAR_COLS); // Kovariančna matrika in srednja vrednost
-                current_Cov[k] = current_Cov[k] / (current_region.cols - 1);
+                cv::calcCovarMatrix(current_region, current_Cov[k], current_Mu[k], CV_COVAR_NORMAL|CV_COVAR_COLS|CV_COVAR_SCALE); // Kovariančna matrika in srednja vrednost
+                current_Cov[k] = current_Cov[k] * current_region.cols / (current_region.cols - 1);
+
                 // Vpis kovariančne matrike, srednje vrednosti, w v ustrezne vektorje (current_mix_...):
                 current_mix_W.insert(current_mix_W.end(), cv::Mat(1,1,CV_64F, Scalar(1.0/3.0)));
                 current_mix_Cov.insert(current_mix_Cov.end(), current_Cov[k]);
@@ -177,6 +189,7 @@ int main (int argc, char ** argv){
         else{
             if (!(colorSpace==HSV)){
                 float df[] = {0,0.2,0.2,0.4,0.6,1}; // to so rocno nastavljene zacetne meje med območji
+//                float df[] = {0,0.3,0.3,0.5,0.5,1}; // to so rocno nastavljene zacetne meje med območji
                 std::vector <float> vertical_ratio(df, df+sizeof(df)/sizeof(float) ); // to samo ustvari vektor in ga zafila z vrednostmi df[]
                 std::transform(vertical_ratio.begin(), vertical_ratio.end(), vertical_ratio.begin(),
                                std::bind1st(std::multiplies<float>(),dataEM.cols)); // to pomnoži vektor z dataEM.cols
@@ -189,8 +202,8 @@ int main (int argc, char ** argv){
                 for (k=0; k<3; k++){ // cez vse regije
                     current_region = dataEM.colRange((int)vertical_ratio[2*k], (int)vertical_ratio[2*k+1]); // 2*k je zato ker tukaj je vertical_ratio kombinacija: [zacetek,konec,zacetek,konec,zacetek,konec]
                     // TODO: ali je tukaj (eno vrstico gor) pravilen range? vključenost prvega in zadnjega stolpca v primerjavi z Matlabom?
-                    cv::calcCovarMatrix(current_region, current_Cov[k], current_Mu[k], CV_COVAR_NORMAL|CV_COVAR_COLS, current_region.type()); // Kovariančna matrika in srednja vrednost
-                    current_Cov[k] = current_Cov[k] / (current_region.cols - 1);
+                    cv::calcCovarMatrix(current_region, current_Cov[k], current_Mu[k], CV_COVAR_NORMAL|CV_COVAR_COLS|CV_COVAR_SCALE, current_region.type()); // Kovariančna matrika in srednja vrednost
+                    current_Cov[k] = current_Cov[k] * current_region.cols / (current_region.cols - 1);
 
                     momentMatchPdf(current_mix_Mu[k], current_Mu[k], current_mix_Cov[k], current_Cov[k], w_mix, current_mix_Mu[k], current_mix_Cov[k], current_mix_W[k]);
                 }
@@ -205,11 +218,15 @@ int main (int argc, char ** argv){
         }
 
         cv::Mat Q_sum_large, mix_PI_i;
+//        printMat("prior_mix_Cov[0] = ", prior_mix_Cov[0]);
+//        printMat("prior_mix_Cov[1] = ", prior_mix_Cov[1]);
+//        printMat("prior_mix_Cov[2] = ", prior_mix_Cov[2]);
         run_SSM(colorSpace, em_image_size, use_uniform_component, type_of_em,
                 maxEMsteps, current_mix_W, PI_i, dataEM, current_mix_Mu, current_mix_Cov, prior_mix_Mu,
                 prior_mix_Prec, use_prior_on_mixture, eps, Q_sum_large, mix_PI_i);
-
+//        printMat("prior_mix_Cov[0] = ", prior_mix_Cov[0]);
 //        printMat("current_mix_Cov[0] = ", current_mix_Cov[0]);
+
 //        printMat("current_mix_Cov[1] = ", current_mix_Cov[1]);
 //        printMat("current_mix_Cov[2] = ", current_mix_Cov[2]);
         std::vector <cv::Mat>PI_i_channels;
@@ -223,6 +240,7 @@ int main (int argc, char ** argv){
         cv::Mat imageToShow;
         displayEdgeAndObjects(frame_original.clone(), imageToShow, xy_subset, suppressedObjects, sea_region, current_mix_Mu, current_mix_Cov, current_mix_W, 1);
 
+        outputVideo << imageToShow;
         std::cout << "Frame " << frame_number << " done" << std::endl;
     }
     return 0;
@@ -243,6 +261,9 @@ void loadPriorModelFromDisk(Colorspace colorSpace, std::vector<cv::Mat> &mix_Mu,
             double data_mu_1[] = {25, 11.1279, 178.6491, 128.4146, 124.4288};
             double data_mu_2[] = {25, 21.6993, 84.6005, 123.6754, 127.5533};
             double data_mu_3[] = {25, 38.2647, 101.2433, 126.3468, 119.7686};
+//            double data_mu_1[] = {25*2, 11.1279*2, 178.6491, 128.4146, 124.4288};
+//            double data_mu_2[] = {25*2, 21.6993*2, 84.6005, 123.6754, 127.5533};
+//            double data_mu_3[] = {25*2, 38.2647*2, 101.2433, 126.3468, 119.7686};
             cv::Mat mix_Mu_1 = cv::Mat(length,1,CV_64F,data_mu_1).clone();
             cv::Mat mix_Mu_2 = cv::Mat(length,1,CV_64F,data_mu_2).clone();
             cv::Mat mix_Mu_3 = cv::Mat(length,1,CV_64F,data_mu_3).clone();

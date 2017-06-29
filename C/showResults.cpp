@@ -100,7 +100,8 @@ void displayEdgeAndObjects1( const cv::Mat &srcImg,
     drawObjects(Image_plus, objects);
     namedWindow("Results",CV_WINDOW_AUTOSIZE);
     cv::imshow("Results",Image_plus);
-//    waitKey(1);
+    waitKey(1);
+    dstImg = Image_plus.clone();
 }
 
 cv::RotatedRect getErrorEllipse(double chisquare_val, cv::Point2f mean, cv::Mat covmat){
@@ -126,7 +127,7 @@ cv::RotatedRect getErrorEllipse(double chisquare_val, cv::Point2f mean, cv::Mat 
 
     //Return the oriented ellipse
     //The -angle is used because OpenCV defines the angle clockwise instead of anti-clockwise
-    return cv::RotatedRect(mean, cv::Size2f((float)halfmajoraxissize, (float)halfminoraxissize), (float)-angle);
+    return cv::RotatedRect(mean, cv::Size2f((float)halfmajoraxissize, (float)halfminoraxissize), (float)angle);
 
 }
 
@@ -143,10 +144,10 @@ void drawObjects(cv::Mat Image_plus, std::vector<object> objects){
     int i;
     for (i=0; i<objects.size(); i++){
         object current = objects[i];
-        std::cout << "current.bounding_box[0] = " << current.bounding_box[0] << std::endl;
-        std::cout << "current.bounding_box[1] = " << current.bounding_box[1] << std::endl;
-        std::cout << "current.bounding_box[2] = " << current.bounding_box[2] << std::endl;
-        std::cout << "current.bounding_box[3] = " << current.bounding_box[3] << std::endl;
+//        std::cout << "current.bounding_box[0] = " << current.bounding_box[0] << std::endl;
+//        std::cout << "current.bounding_box[1] = " << current.bounding_box[1] << std::endl;
+//        std::cout << "current.bounding_box[2] = " << current.bounding_box[2] << std::endl;
+//        std::cout << "current.bounding_box[3] = " << current.bounding_box[3] << std::endl;
 
         cv::Rect bbx((int)current.bounding_box[0],
                      (int)current.bounding_box[1],

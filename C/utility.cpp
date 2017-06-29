@@ -260,7 +260,7 @@ void run_SSM(Colorspace colorSpace,
             int mid = (int)std::ceil(d_pi.rows/2);
             cv::Mat dpi = d_pi(cv::Range(mid,d_pi.rows),cv::Range::all());
             cv::Scalar loglik_new = cv::mean(dpi);
-            if (loglik_new.val[0] > 0.0008) // original: 0.01
+            if (loglik_new.val[0] > 0.0008) // 0.0008 original: 0.01
             {
                 PI_i0 = PI_i;
             }
@@ -537,5 +537,6 @@ cv::Mat mergePd(cv::Mat mu_d, cv::Mat c_d, cv::Mat mu_0, cv::Mat c0,cv::Mat ic0)
     //% nonrobust
     //% V = inv(iCd  + iC0) ;
     //% Mu = V*(inv(C_d)*Mu_d + inv(C_0)*Mu_0) ;
+
     return mu;
 }

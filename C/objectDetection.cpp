@@ -12,6 +12,12 @@ using namespace cv;
 using namespace std;
 
 void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFrameSize, std::vector <object> &objects, cv::Mat &xy_subset, std::vector<object> &suppressedObjects, cv::Mat &sea_region){ // TODO: v Matlabu se poleg objektov vrnejo še xy koordinate nečesa in masked_sea
+//    std::vector<cv::Mat> areas_chn;
+//    cv::split(areas,areas_chn);
+//    printMat("areas_chn[0] = ", areas_chn[0]);
+//    printMat("areas_chn[1] = ", areas_chn[1]);
+//    printMat("areas_chn[2] = ", areas_chn[2]);
+//    printMat("areas_chn[3] = ", areas_chn[3]);
     // areas is 4-channel CV_64FC4 image. Each channel represents one area + 4th channel is ____
     // original_frame_size is original frame size
     if (areas.type()!=CV_64FC4){
@@ -33,6 +39,18 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
     std::vector <cv::Mat>areas_ch;
     cv::split(areas,areas_ch);
 
+//    std::vector<cv::Mat> areas_ch3; areas_ch3.push_back(areas_ch[0]); areas_ch3.push_back(areas_ch[3]); areas_ch3.push_back(areas_ch[2]);
+////    std::vector<cv::Mat> areas_ch3;
+////        areas_ch3.push_back(cv::Mat::zeros(50,50,areas_ch[0].type()));
+////        areas_ch3.push_back(cv::Mat::zeros(50,50,areas_ch[0].type()));
+////        areas_ch3.push_back(areas_ch[2]);
+//    cv::Mat merged;
+//    cv::merge(areas_ch3,merged); merged/=2;
+//    imshow("merged_ch3", merged.t());
+
+
+    //areas_ch[3]*=4;
+    //areas_ch[2] = cv::min(areas_ch[2],cv::Mat(areas_ch[2].rows,areas_ch[2].cols, areas_ch[2].type(),cv::Scalar(0.1)));
     areas_max = cv::max(areas_ch[0], areas_ch[1]);
     areas_max = cv::max(areas_ch[2], areas_max);
     areas_max = cv::max(areas_ch[3], areas_max);
@@ -42,14 +60,17 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
     cv::Mat T; // T is sea region
     sea_region = cv::Mat(areas_max.rows,areas_max.cols,CV_8UC1,Scalar::all(0)); // sea_region is the largest continuous sea region
 
-    cv::compare(areas_max, areas_ch[2], T, cv::CMP_EQ); // TODO: is areas_ch[2] sea region?
 
+    cv::compare(areas_max, areas_ch[2], T, cv::CMP_EQ);
+    //imshow("sea_region", T.t());
     // TODO: odstrani 8-connectivity ozadja v T
 
     // keep only the largest continuous region
     cv::Mat temp; temp = T.clone();
 
     keepLargestBlob(T,sea_region); // To zdaj deluje
+//    sea_region = T.clone(); // TODO: to je samo namesto keepLargestBlob
+
 
     T = sea_region.clone();
     // v MATLABU je tukaj še sea_region=~bwmorph(~sea_region,'clean'), kar odstrani osamele piksle. Tega itak ni ker smo ohrnili samo največjo regijo!
@@ -140,6 +161,8 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
     cv::Mat I;
     I = cv::Mat::ones(T.cols,T.rows,CV_8U)-T.t(); // v ones() sem zamenjal cols in rows, ker je potem T transponiran!
 
+    //imshow("blobs",I);
+
     std::vector <cv::Mat> CC;
     CC = extractBlobs(I); // v CC so blobi vsak svoja matrika
 
@@ -162,10 +185,10 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
         width = xmax-xmin;
         height = ymax-ymin;
 
-        xmin*=(int)Tt.at<float>(0,0);
-        ymin*=(int)Tt.at<float>(1,1);
-        width*=(int)Tt.at<float>(0,0);
-        height*=(int)Tt.at<float>(1,1);
+        xmin*=Tt.at<float>(0,0);
+        ymin*=Tt.at<float>(1,1);
+        width*=Tt.at<float>(0,0);
+        height*=Tt.at<float>(1,1);
         std::vector <float> boundingBox;
 
         boundingBox.push_back((float)xmin);
@@ -191,9 +214,18 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
         loc=0;
         while(temp2[loc]!=temp2_min) loc++;
 
+//        printMat("xy_subset = ", xy_subset);
         cv::Mat boundary = xy_subset.col(loc);
+//        cv::Mat meanBorderY,minBorderY,maxBorderY;
+//        cv::reduce(xy_subset.row(1),meanBorderY,REDUCE_TO_COL,CV_REDUCE_AVG);
+//        meanBorderY.convertTo(meanBorderY,CV_32F);
+//        cv::reduce(xy_subset.row(1),maxBorderY,REDUCE_TO_COL,CV_REDUCE_MAX);
+//        maxBorderY.convertTo(maxBorderY,CV_32F);
+//        cv::reduce(xy_subset.row(1),minBorderY,REDUCE_TO_COL,CV_REDUCE_MIN);
+//        minBorderY.convertTo(minBorderY,CV_32F);
 
         if (boundary.at<float>(1)>ymin){
+//        if (maxBorderY.at<float>(0)>ymin){
             continue;
         }
 
@@ -284,6 +316,8 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
 }
 
 void keepLargestBlob(cv::Mat &in, cv::Mat &out){
+    // TODO: pomembno!!! Ne deluje pravilno ce ima najvecji blob 'lukno':
+
     // ne operiramo na in, ker smo ga nekako ponesreči spreminjali :/
     // ne operiramo na out, ker vmes izhodna matrika prevzame drugačno velikost kot jo ima out, ki je bil deklariran in inicializiran že zunaj - pred klicem funkcije
     // TODO: kaj če out ne bi bil inicializiran že pred klicem te funckije?
@@ -329,6 +363,7 @@ void keepLargestBlob(cv::Mat &in, cv::Mat &out){
     Scalar color( 255); // white color
     drawContours( dst, contours,largest_contour_index, color, CV_FILLED, 8, hierarchy ); // Draw the largest contour using previously stored index.
 
+    dst = dst.mul(src); // zato da ohranimo oviro, ki je v src oznacena z niclami, v dst pa jo je lahko drawContours prerisal z enkami (je povsem oblita z morjem)
     dst = dst.rowRange(1,dst.rows-1).colRange(1,dst.cols-1).clone(); // obrezemo dodane stolpce (prvi in zadnji) in vrstice (prva in zadnja)
 
     assert(dst.rows == in.rows); // koncna velikost mora biti enaka zacetni!
@@ -615,20 +650,14 @@ void mergeByProximity(cv::Mat& bbs_out, std::vector<object> objects, std::vector
             id_remove.push_back(ratios[i]<=mindist);
         }
 
-        // bbs_out(counter,:) = suppress_detections(bbs,Mu,id_remove)
         cv::Mat bbs_temp;
         suppress_detections(bbs, Mu, id_remove, bbs_temp);
-        printMat("bbs = ", bbs);
-        printMat("bbs_out = ", bbs_out);
-        printMat("bbs_temp = ", bbs_temp);
+
         if (!bbs_out.empty())
             cv::vconcat(bbs_out,bbs_temp,bbs_out);
         else
             bbs_out = bbs_temp.clone();
 
-        printMat("bbs_out = ", bbs_out);
-
-//        bbs_temp.copyTo(bbs_out.row(counter));
 
         // selected_out(counter).idx = ordr(id_remove);
         std::vector <int> temp;
