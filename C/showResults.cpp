@@ -128,7 +128,6 @@ cv::RotatedRect getErrorEllipse(double chisquare_val, cv::Point2f mean, cv::Mat 
     //Return the oriented ellipse
     //The -angle is used because OpenCV defines the angle clockwise instead of anti-clockwise
     return cv::RotatedRect(mean, cv::Size2f((float)halfmajoraxissize, (float)halfminoraxissize), (float)angle);
-
 }
 
 void drawEdge(cv::Mat &Img, std::vector<cv::Point> edge, cv::Scalar color, int width){
@@ -142,15 +141,8 @@ void drawEdge(cv::Mat &Img, std::vector<cv::Point> edge, cv::Scalar color, int w
 
 void drawObjects(cv::Mat Image_plus, std::vector<object> objects){
     int i;
-
-    if(objects.size()>1)
-        std::cout << "Vec kot en objekt za prikazat!" << std::endl;
     for (i=0; i<objects.size(); i++){
         object current = objects[i];
-//        std::cout << "current.bounding_box[0] = " << current.bounding_box[0] << std::endl;
-//        std::cout << "current.bounding_box[1] = " << current.bounding_box[1] << std::endl;
-//        std::cout << "current.bounding_box[2] = " << current.bounding_box[2] << std::endl;
-//        std::cout << "current.bounding_box[3] = " << current.bounding_box[3] << std::endl;
 
         cv::Rect bbx((int)current.bounding_box[0],
                      (int)current.bounding_box[1],
@@ -159,8 +151,6 @@ void drawObjects(cv::Mat Image_plus, std::vector<object> objects){
 
         cv::Scalar color(255,0,0);
         cv::rectangle(Image_plus,bbx, color, 2, 8);
-
-        imshow("zadnja ovira", Image_plus);
     }
     return;
 }
