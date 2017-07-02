@@ -84,12 +84,14 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
         std::vector<Point> contour;
         extractTheLargestCurve(dT, contour);
         removeCirclebackY(contour);
-        cv::Point firstPoint,lastPoint;
+        cv::Point firstPoint,lastPoint,edgePoint;
         firstPoint.x = contour[0].x; firstPoint.y = 0;
         lastPoint.x = contour[contour.size()-1].x; lastPoint.y = min(contour[contour.size()].y+2,dT.rows);
+        edgePoint.y = dT.rows+1; edgePoint.x = lastPoint.x;
 
         contour.insert(contour.begin(),firstPoint);
         contour.push_back(lastPoint);
+        contour.push_back(edgePoint);
 
         int i;
         cv::Point t0;
@@ -280,19 +282,10 @@ void extractTheLargestCurve(const cv::Mat &in, std::vector<cv::Point> &points){
         std::cerr << "src.type() must be CV_8U! source image must be binary!" << std::endl;
     }
 
-//    cv::Mat empty_col, empty_row;
-//    empty_col = cv::Mat::zeros(src.rows, 1, src.type());
-//    empty_row = cv::Mat::zeros(1, src.rows+2, src.type());
-//    cv::hconcat(empty_col,src,src);
-//    cv::hconcat(src,empty_col,src);
-//    cv::vconcat(empty_row,src,src);
-//    cv::vconcat(src,empty_row,src);
-
     // find all curves
     vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
     cv::findContours( src, contours, hierarchy, CV_RETR_LIST , CV_CHAIN_APPROX_NONE );
-
 
     // TODO: kaj naj se zgodi ko NI črt?
     if (contours.size() == 0){

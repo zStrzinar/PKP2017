@@ -68,8 +68,7 @@ void displayEdgeAndObjects1( const cv::Mat &srcImg,
                              cv::Mat &current_mix_Mu,
                              std::vector<cv::Mat> &current_mix_Cov,
                              cv::Mat &current_mix_W){
-    cv::Mat Image_plus, Regions;    // Image_plus je originalna slika + elipse + meja morja + ovire
-                                    // Regions je dvo-barvna slika ki prikazuje morje - ne-morje
+    cv::Mat Image_plus;    // Image_plus je originalna slika + elipse + meja morja + ovire
     Image_plus = srcImg.clone();
 
     // Add ellipses
