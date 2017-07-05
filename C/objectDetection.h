@@ -10,6 +10,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include "opencv2/opencv.hpp"
 #include <iostream>
+#include "utility.h"
 
 struct object{
     std::vector <float> bounding_box;

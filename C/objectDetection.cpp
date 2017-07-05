@@ -42,15 +42,12 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
     cv::Mat T; // T is sea region
     sea_region = cv::Mat(areas_max.rows,areas_max.cols,CV_8UC1,Scalar::all(0)); // sea_region is the largest continuous sea region
 
-
     cv::compare(areas_max, areas_ch[2], T, cv::CMP_EQ);
     // TODO: odstrani 8-connectivity ozadja v T
 
     // keep only the largest continuous region
     cv::Mat temp; temp = T.clone();
-
     keepLargestBlob(T,sea_region); // To zdaj deluje
-
 
     T = sea_region.clone();
     // v MATLABU je tukaj še sea_region=~bwmorph(~sea_region,'clean'), kar odstrani osamele piksle. Tega itak ni ker smo ohrnili samo največjo regijo!
@@ -213,8 +210,6 @@ void getEdgeAndObjectNoScaling(const cv::Mat &areas, const cv::Size originalFram
 }
 
 void keepLargestBlob(cv::Mat &in, cv::Mat &out){
-    // TODO: pomembno!!! Ne deluje pravilno ce ima najvecji blob 'lukno':
-
     // ne operiramo na in, ker smo ga nekako ponesreči spreminjali :/
     // ne operiramo na out, ker vmes izhodna matrika prevzame drugačno velikost kot jo ima out, ki je bil deklariran in inicializiran že zunaj - pred klicem funkcije
     // TODO: kaj če out ne bi bil inicializiran že pred klicem te funckije?

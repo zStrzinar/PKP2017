@@ -74,7 +74,6 @@ void displayEdgeAndObjects1( const cv::Mat &srcImg,
     // Add ellipses
     int i;
 
-
     for(i=0;i<3;i++){
         cv::Point2f mean((float)current_mix_Mu.col(i).at<double>(0),(float)current_mix_Mu.col(i).at<double>(1));
         cv::RotatedRect ellipse = getErrorEllipse(2.4477,mean,current_mix_Cov[i]);
